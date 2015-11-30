@@ -19,6 +19,10 @@ public class Plip extends Creature {
     /** blue color. */
     private int b;
 
+    private int get_green(double energy){
+      return 96*(int)energy + 63;
+    }
+
     /** creates plip with energy equal to E. */
     public Plip(double e) {
         super("plip");
@@ -41,7 +45,9 @@ public class Plip extends Creature {
      *  that you get this exactly correct.
      */
     public Color color() {
-        g = 63;
+        r = 99;
+        b = 76;
+        g = get_green(energy);
         return color(r, g, b);
     }
 
@@ -54,11 +60,18 @@ public class Plip extends Creature {
      *  private static final variable. This is not required for this lab.
      */
     public void move() {
+      energy = energy - 0.15;
     }
 
 
     /** Plips gain 0.2 energy when staying due to photosynthesis. */
     public void stay() {
+      if(energy < 2){
+        energy = energy + 0.2;
+      }
+      if(energy > 2){
+        energy = 2;
+      }
     }
 
     /** Plips and their offspring each get 50% of the energy, with none
@@ -66,7 +79,9 @@ public class Plip extends Creature {
      *  Plip.
      */
     public Plip replicate() {
-        return this;
+        energy = energy/2;
+        double babyEnergy = energy;
+        return new Plip(babyEnergy);
     }
 
     /** Plips take exactly the following actions based on NEIGHBORS:
@@ -80,6 +95,20 @@ public class Plip extends Creature {
      *  for an example to follow.
      */
     public Action chooseAction(Map<Direction, Occupant> neighbors) {
-        return new Action(Action.ActionType.STAY);
+        List<Direction> empties = getNeighborsOfType(neighbors, "empty");
+        List<Direction> cloruses = getNeighborsOfType(neighbors, "clorus");
+        if(empties.size() == 0){
+            return new Action(Action.ActionType.STAY);
+        }
+        else if(empties.size() >= 1){
+            Direction moveDir = empties.get(0);
+            return new Action(Action.ActionType.REPLICATE, moveDir);
+        }
+        else if (cloruses.size() > 0) {
+            Direction moveDir = empties.get(0);
+            return new Action(Action.ActionType.MOVE, moveDir);
+        }
+        else
+            return new Action(Action.ActionType.STAY);
     }
 }

@@ -13,28 +13,79 @@ public class SortedComparableList {
     /** A list with head HEAD0 and tail TAIL0. */
     public SortedComparableList(Comparable head0, SortedComparableList tail0) {
         // REPLACE THIS LINE WITH YOUR SOLUTION
+        this.head = head0;
+        this.tail = tail0;
     }
 
     /** A list with null tail, and head = 0. */
     public SortedComparableList(){
         // REPLACE THIS LINE WITH YOUR SOLUTION
+        this.head = 0;
+        this.tail = null;
     }
 
     /** Inserts Comparable c into its correct location in this list. */
     public void insert(Comparable c) {
         // REPLACE THIS LINE WITH YOUR SOLUTION
+        Comparable temp = head;
+        SortedComparableList tempList = tail;
+        while((temp != null ) &&( temp.compareTo(c) > 0)){
+          temp = this.tail.head;
+          tempList = this.tail;
+        }
+
+        if(temp == null){
+          this.head = c;
+          this.tail = null;
+        }
+        else{
+          if(tempList == null){
+            tempList.tail.head = c;
+            tempList.tail.tail = null;
+          }
+          else{
+            //Comporable temporary = head;
+            //while(temporary != null){
+             //if(temporary.compareTo(temp) == 0){
+             //             }
+// }
+            SortedComparableList temporary = tempList;
+            tempList.head = c;
+            tempList.tail = temporary;
+          }
+        }
+
     }
 
     /** Returns the i-th int in this list.
      *  The first element, which is in location 0, is the 0th element.
      *  Assume i takes on the values [0, length of list - 1]. */
     public Comparable get(int i) {
-        return null; // REPLACE THIS LINE WITH YOUR SOLUTION
+        Comparable temp = head;
+        SortedComparableList tempList = tail;
+        while(i > 0){
+          temp = tempList.head;
+          tempList = tempList.tail;
+          i--;
+        }
+        return temp; // REPLACE THIS LINE WITH YOUR SOLUTION
     }
 
     /** Adds every item in THAT to this list. */
     public void extend(SortedComparableList that) {
-        // REPLACE THIS LINE WITH YOUR SOLUTION
+      Comparable temp = head;
+      SortedComparableList tempList = tail;
+
+      while(that != null){
+        if(that.head.compareTo(temp) < 0){
+          tempList.tail.head = that.head;
+          tempList.tail.tail = that.tail;
+        }
+        temp = tempList.tail.head;
+        tempList = tempList.tail;
+        that = that.tail;
+
+      }
     }
 
     /** Returns a list consisting of the elements of L starting from

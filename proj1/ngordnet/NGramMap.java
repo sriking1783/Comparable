@@ -24,25 +24,16 @@ public class NGramMap {
     public YearlyRecord getRecord(int year) {
         HashMap<String, Integer> yearly_stats = new HashMap<String, Integer>();
         for(Map.Entry<String, TreeMap<Integer, Integer>> entry : word_stats.entrySet()) {
-            TreeMap<Integer, Integer> yearly_counts = entry.getValue();
-            for(Map.Entry<Integer, Integer> entry1 : yearly_counts.entrySet()) {
-                if(entry1.getKey() == year) {
-                    yearly_stats.put(entry.getKey(), entry1.getValue());
-                }
-            }
+            if(entry.getValue().containsKey(year))
+                yearly_stats.put(entry.getKey(), entry.getValue().get(year));
         }
         return new YearlyRecord(yearly_stats);
     }
 
     public TimeSeries<Integer> countHistory(String word) {
         TimeSeries<Integer> ts = new TimeSeries<Integer>();
-        for(Map.Entry<String, TreeMap<Integer, Integer>> entry : word_stats.entrySet()) {
-            TreeMap<Integer, Integer> yearly_counts = entry.getValue();
-            if(entry.getKey().equals(word)) {
-                for(Map.Entry<Integer, Integer> entry1 : yearly_counts.entrySet()) {
-                    ts.put(entry1.getKey(), entry1.getValue());
-                }
-            }
+        for(Map.Entry<Integer, Integer> entry : word_stats.get(word).entrySet()) {
+            ts.put(entry.getKey(), entry.getValue());
         }
         return ts;
     }
@@ -58,20 +49,28 @@ public class NGramMap {
 
     public TimeSeries<Double> weightHistory(String word) {
         TimeSeries<Double> ts = new TimeSeries<Double>();
-        for(Map.Entry<String, TreeMap<Integer, Integer>> entry : word_stats.entrySet()) {
-            TreeMap<Integer, Integer> yearly_counts = entry.getValue();
-            if(entry.getKey().equals(word)) {
-                for(Map.Entry<Integer, Integer> entry1 : yearly_counts.entrySet()) {
-                    double data = total_words.get(entry1.getKey());
-                    ts.put(entry1.getKey(), entry1.getValue()/data);
-                }
-            }
+        for(Map.Entry<Integer, Integer> entry : word_stats.get(word).entrySet()) {
+            double data = total_words.get(entry.getKey());
+            ts.put(entry.getKey(), entry.getValue()/data);
         }
         return ts;
     }
 
     public TimeSeries<Double> summedWeightHistory(ArrayList<String> words) {
-        return null;
+        TimeSeries<Double> ts = new TimeSeries<Double>();
+        for(String word : words) {
+            TimeSeries<Double> temp = new TimeSeries<Double>();
+            temp = weightHistory(word);
+            for(Map.Entry<Integer, Double> entry : temp.entrySet()) {
+                if(ts.containsKey(entry.getKey())) {
+                  ts.put(entry.getKey(), ts.get(entry.getKey())+ entry.getValue());
+                }
+                else {
+                  ts.put(entry.getKey(), entry.getValue());
+                }
+            }
+        }
+        return ts;
     }
 
     private void read_words_file(String words_file) {

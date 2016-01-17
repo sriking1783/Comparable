@@ -9,14 +9,14 @@ public class WordNet {
   public WordNet(String sysnet_file, String hyponet_file){
       int vertices;
       try {
-          g = new Digraph(countWords(sysnet_file));
           wordnet = new HashMap<Integer,String>();
-          BufferedReader br = new BufferedReader(new FileReader(sysnet_file));
+          g = new Digraph(countWords(sysnet_file));
+          //BufferedReader br = new BufferedReader(new FileReader(sysnet_file));
 
-          for(String line; (line = br.readLine()) != null; ) {
+          /*for(String line; (line = br.readLine()) != null; ) {
               String[] retval = line.split(",");
               wordnet.put(Integer.parseInt(retval[0]), retval[1]);
-          }
+          }*/
           BufferedReader br1 = new BufferedReader(new FileReader(hyponet_file));
 
           for(String line; (line = br1.readLine()) != null; ) {
@@ -45,61 +45,40 @@ public class WordNet {
       return false;
   }
 
-  public String[] nouns() {
-      List<String> noun_values = new ArrayList<String>();
+  public Set<String> nouns() {
+      Set<String>noun_values = new HashSet<String>();
       for(String value :  wordnet.values()){
           String[] values = value.split(" ");
-          for(String noun : values){
-              if(!noun_values.contains(noun))
-                  noun_values.add(noun);
-          }
+          Collections.addAll(noun_values, values);
       }
-      return convertList(noun_values);
+      return noun_values;
   }
 
-  private List<String> get_hyponyms(String noun){
-      List<Integer> keys= getKey(noun);
-      List<String> hypo_nyms = new ArrayList<String>();
-      for(int key : keys){
-          Iterable<Integer> adjacents = g.adj(key);
-          for(Iterator<Integer> i = adjacents.iterator(); i.hasNext(); ) {
-              int item = i.next();
-              String[] values = wordnet.get(item).split(" ");
-              for(String value : values){
-                  if(!hypo_nyms.contains(value)){
-                      hypo_nyms.add(value);
-                      hypo_nyms.addAll(get_hyponyms(value));
-                  }
-              }
-          }
+
+  public Set<String> depth_first(int key) {
+      Set<String> hypo_nyms = new HashSet<String>();
+      for(int w : g.adj(key)) {
+          String[] values = wordnet.get(w).split(" ");
+          Collections.addAll(hypo_nyms, values);
+          hypo_nyms.addAll(depth_first(w));
       }
       return hypo_nyms;
   }
 
-  public String[] hyponyms(String noun) {
+  public Set<String> hyponyms(String noun) {
       List<Integer> keys = getKey(noun);
-      List<String> hypo_nyms = new ArrayList<String>();
+      Set<String> hypo_nyms = new HashSet<String>();
+      //System.out.println("in function hyponyms");
       for(int key : keys) {
-          Iterable<Integer> adjacents = g.adj(key);
-          hypo_nyms = get_hyponyms(noun);
-
+          //hypo_nyms = get_adjacent_hyponyms(noun);
           String[] values = wordnet.get(key).split(" ");
-          for(String value : values){
-              hypo_nyms.add(value);
-           }
+          Collections.addAll(hypo_nyms, values);
+          hypo_nyms.addAll(depth_first(key));
 
-          for(Map.Entry<Integer, String> entry : wordnet.entrySet()) {
-              String[] entries = entry.getValue().split(" ");
-              if(noun != null && Arrays.asList(entries).contains(noun)){
-                  for(String value : entries){
-                      if(!hypo_nyms.contains(value))
-                          hypo_nyms.add(value);
-                  }
-              }
-          }
       }
+      //hypo_nyms.addAll(get_related_hyponyms(noun));
 
-      return convertList(hypo_nyms);
+      return hypo_nyms;
   }
 
   private String[] convertList(List<String> string_list){
@@ -128,9 +107,11 @@ public class WordNet {
         int count = 0;
         int readChars = 0;
         boolean empty = true;
+        int i = 0;
         try (BufferedReader br = new BufferedReader(new FileReader(filename))) {
             for(String line; (line = br.readLine()) != null; ) {
                 String[] items = line.split(",");
+                wordnet.put(Integer.parseInt(items[0]), items[1]);
                 count += items.length;
             }
         }
@@ -147,6 +128,7 @@ public class WordNet {
         int readChars = 0;
         boolean empty = true;
         while ((readChars = is.read(c)) != -1) {
+            System.out.println("Counting lines");
             empty = false;
             for (int i = 0; i < readChars; ++i) {
                 if (c[i] == '\n') {

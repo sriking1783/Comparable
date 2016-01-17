@@ -21,9 +21,8 @@ public class TimeSeries<T extends Number> extends TreeMap<Integer, T>{
 
     public Collection<Number> data() {
         ArrayList<Number> t = new ArrayList<Number>();
-        T temp;
-
-        for(Number year: years()) {
+        Number temp;
+        for(Number year: this.years()) {
             temp = get((Integer) year);
             t.add((Number) temp);
         }

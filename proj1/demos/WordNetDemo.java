@@ -1,3 +1,4 @@
+package demos;
 import ngordnet.WordNet;
 
 /** Class that demonstrates basic WordNet functionality.
@@ -5,14 +6,14 @@ import ngordnet.WordNet;
  */
 public class WordNetDemo {
     public static void main(String[] args) {
-        WordNet wn = new WordNet("./wordnet/synsets11.txt", "./wordnet/hyponyms11.txt");
+        WordNet wn = new WordNet("/Users/sastaputhra/HomeWork/cs61b_spring/skeleton/proj1/demos/wordnet/synsets11.txt", "/Users/sastaputhra/HomeWork/cs61b_spring/skeleton/proj1/demos/wordnet/hyponyms11.txt");
 
         /* These should all print true. */
         System.out.println(wn.isNoun("jump"));
         System.out.println(wn.isNoun("leap"));
         System.out.println(wn.isNoun("nasal_decongestant"));
 
-        /* The code below should print the following (maybe not in this order): 
+        /* The code below should print the following (maybe not in this order):
             All nouns:
             augmentation
             nasal_decongestant
@@ -33,7 +34,7 @@ public class WordNetDemo {
             System.out.println(noun);
         }
 
-        /* The code below should print the following (maybe not in this order): 
+        /* The code below should print the following (maybe not in this order):
             Hypnoyms of increase:
             augmentation
             increase
@@ -46,7 +47,7 @@ public class WordNetDemo {
             System.out.println(noun);
         }
 
-        /* The code below should print the following (maybe not in this order): 
+        /* The code below should print the following (maybe not in this order):
             Hypnoyms of jump:
             parachuting
             leap
@@ -56,7 +57,7 @@ public class WordNetDemo {
         System.out.println("Hypnoyms of jump:");
         for (String noun : wn.hyponyms("jump")) {
             System.out.println(noun);
-        }  
+        }
 
         /* The code below should print the following (maybe not in this order):
             Hypnoyms of change:
@@ -69,15 +70,15 @@ public class WordNetDemo {
             transition
             demotion
             leap
-            jump        
+            jump
         */
 
         /** From: http://goo.gl/EGLoys */
         System.out.println("Hypnoyms of change:");
 
-        WordNet wn2 = new WordNet("./wordnet/synsets14.txt", "./wordnet/hyponyms14.txt");
+        WordNet wn2 = new WordNet("/Users/sastaputhra/HomeWork/cs61b_spring/skeleton/proj1/demos/wordnet/synsets14.txt", "/Users/sastaputhra/HomeWork/cs61b_spring/skeleton/proj1/demos/wordnet/hyponyms14.txt");
         for (String noun : wn2.hyponyms("change")) {
             System.out.println(noun);
-        }              
-    }    
-} 
+        }
+    }
+}

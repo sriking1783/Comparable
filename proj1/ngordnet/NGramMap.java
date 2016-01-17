@@ -3,6 +3,8 @@ package ngordnet;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.ArrayList;
 import java.io.*;
 import java.util.Arrays;
@@ -30,10 +32,17 @@ public class NGramMap {
         return new YearlyRecord(yearly_stats);
     }
 
-    public TimeSeries<Integer> countHistory(String word) {
+    public TimeSeries<Integer> countHistory(String word, Integer... years) {
         TimeSeries<Integer> ts = new TimeSeries<Integer>();
         for(Map.Entry<Integer, Integer> entry : word_stats.get(word).entrySet()) {
-            ts.put(entry.getKey(), entry.getValue());
+            if(years.length == 0) {
+                ts.put(entry.getKey(), entry.getValue());
+            }
+            else {
+                if((years[0] >= entry.getKey()) && (years[1] <= entry.getKey())){
+                    ts.put(entry.getKey(), entry.getValue());
+                }
+            }
         }
         return ts;
     }
@@ -47,16 +56,24 @@ public class NGramMap {
         return ts;
     }
 
-    public TimeSeries<Double> weightHistory(String word) {
+    public TimeSeries<Double> weightHistory(String word, Integer... years) {
         TimeSeries<Double> ts = new TimeSeries<Double>();
         for(Map.Entry<Integer, Integer> entry : word_stats.get(word).entrySet()) {
-            double data = total_words.get(entry.getKey());
-            ts.put(entry.getKey(), entry.getValue()/data);
+            if(years.length == 0) {
+                double data = total_words.get(entry.getKey());
+                ts.put(entry.getKey(), entry.getValue()/data);
+            }
+            else {
+                if((years[0] <= entry.getKey()) && (years[1] >= entry.getKey())){
+                    double data = total_words.get(entry.getKey());
+                    ts.put(entry.getKey(), entry.getValue()/data);
+                }
+            }
         }
         return ts;
     }
 
-    public TimeSeries<Double> summedWeightHistory(ArrayList<String> words) {
+    public TimeSeries<Double> summedWeightHistory(ArrayList<String> words, Integer... years) {
         TimeSeries<Double> ts = new TimeSeries<Double>();
         for(String word : words) {
             TimeSeries<Double> temp = new TimeSeries<Double>();

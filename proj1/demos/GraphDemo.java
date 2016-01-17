@@ -37,7 +37,7 @@ public class GraphDemo {
 
         Set<Integer> ten = new TreeSet<Integer>();
         ten.add(10);
-        System.out.println("\nDescendants of 10: ");        
+        System.out.println("\nDescendants of 10: ");
         System.out.println(GraphHelper.descendants(g, ten));
     }
 }

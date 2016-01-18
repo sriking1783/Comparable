@@ -6,17 +6,12 @@ import java.io.*;
 public class WordNet {
     Digraph g;
     HashMap<Integer,String> wordnet;
+    Set<String> all_nouns;
   public WordNet(String sysnet_file, String hyponet_file){
       int vertices;
       try {
           wordnet = new HashMap<Integer,String>();
           g = new Digraph(countWords(sysnet_file));
-          //BufferedReader br = new BufferedReader(new FileReader(sysnet_file));
-
-          /*for(String line; (line = br.readLine()) != null; ) {
-              String[] retval = line.split(",");
-              wordnet.put(Integer.parseInt(retval[0]), retval[1]);
-          }*/
           BufferedReader br1 = new BufferedReader(new FileReader(hyponet_file));
 
           for(String line; (line = br1.readLine()) != null; ) {
@@ -33,22 +28,20 @@ public class WordNet {
       catch(IOException iex){
           System.out.println(iex);
       }
+      all_nouns = nouns();
 
   }
 
   public boolean isNoun(String noun) {
-      for(String value : wordnet.values()){
-          String[] values = value.split(" ");
-          if(Arrays.asList(values).contains(noun))
-              return true;
-      }
-      return false;
+      return all_nouns.contains(noun);
   }
 
   public Set<String> nouns() {
       Set<String>noun_values = new HashSet<String>();
       for(String value :  wordnet.values()){
           String[] values = value.split(" ");
+          if(Arrays.asList(values).contains("Kerry_blue_terrier"))
+              System.out.println("-----"+Arrays.toString(values)+"------");
           Collections.addAll(noun_values, values);
       }
       return noun_values;
@@ -68,15 +61,12 @@ public class WordNet {
   public Set<String> hyponyms(String noun) {
       List<Integer> keys = getKey(noun);
       Set<String> hypo_nyms = new HashSet<String>();
-      //System.out.println("in function hyponyms");
       for(int key : keys) {
-          //hypo_nyms = get_adjacent_hyponyms(noun);
           String[] values = wordnet.get(key).split(" ");
           Collections.addAll(hypo_nyms, values);
           hypo_nyms.addAll(depth_first(key));
 
       }
-      //hypo_nyms.addAll(get_related_hyponyms(noun));
 
       return hypo_nyms;
   }

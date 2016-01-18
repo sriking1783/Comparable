@@ -6,6 +6,8 @@ import edu.princeton.cs.introcs.StdIn;
 import edu.princeton.cs.introcs.In;
 import java.util.Arrays;
 import java.util.Set;
+import java.util.HashSet;
+import java.util.ArrayList;
 
 /** Provides a simple user interface for exploring WordNet and NGram data.
  *  @author [yournamehere mcjones]
@@ -33,7 +35,8 @@ public class NgordnetUI {
             String command = rawTokens[0];
             String[] tokens = new String[rawTokens.length - 1];
             System.arraycopy(rawTokens, 1, tokens, 0, rawTokens.length - 1);
-
+            WordNet wn ;
+            Plotter plotter = new Plotter();
             switch (command) {
                 case "quit":
                     return;
@@ -56,20 +59,35 @@ public class NgordnetUI {
                     System.out.println(ngm.countInYear(word, year));
                     break;
                 case "history":
-                    word = tokens[0];
                     ngm = new NGramMap("/Users/sastaputhra/HomeWork/cs61b_spring/skeleton/proj1/demos/ngrams/all_words.csv",
                                     "/Users/sastaputhra/HomeWork/cs61b_spring/skeleton/proj1/demos/ngrams/total_counts.csv");
 
-                    Plotter plotter = new Plotter();
-                    plotter.plotWeightHistory(ngm, word, startDate, endDate);
-
+                    plotter.plotAllWords(ngm, tokens, startDate, endDate);
                     break;
                 case "hyponyms":
-                    WordNet wn = new WordNet("/Users/sastaputhra/HomeWork/cs61b_spring/skeleton/proj1/demos/wordnet/synsets.txt", "/Users/sastaputhra/HomeWork/cs61b_spring/skeleton/proj1/demos/wordnet/hyponyms.txt");
+                    wn = new WordNet("/Users/sastaputhra/HomeWork/cs61b_spring/skeleton/proj1/demos/wordnet/synsets.txt",
+                                           "/Users/sastaputhra/HomeWork/cs61b_spring/skeleton/proj1/demos/wordnet/hyponyms.txt");
                     Set<String> words = wn.hyponyms(tokens[0]);
                     System.out.println(Arrays.toString(words.toArray()));
                     break;
                 case "hypohist":
+                    wn = new WordNet("/Users/sastaputhra/HomeWork/cs61b_spring/skeleton/proj1/demos/wordnet/synsets.txt",
+                                           "/Users/sastaputhra/HomeWork/cs61b_spring/skeleton/proj1/demos/wordnet/hyponyms.txt");
+                    ngm = new NGramMap("/Users/sastaputhra/HomeWork/cs61b_spring/skeleton/proj1/demos/ngrams/all_words.csv",
+                                    "/Users/sastaputhra/HomeWork/cs61b_spring/skeleton/proj1/demos/ngrams/total_counts.csv");
+                    Set<String> wordnets = new HashSet<String>();
+                    for(String token : tokens) {
+                        wordnets.addAll(wn.hyponyms(token));
+                    }
+                    ArrayList<String> temp_words = new ArrayList<String>();
+                    for(String w : wordnets) {
+                        System.out.println(w);
+                        temp_words.add(w);
+                    }
+                    String[] array_words = new String[temp_words.size()];
+                    int i = 0;
+                    plotter.plotAllWords(ngm, temp_words.toArray(array_words), startDate, endDate);
+
                     break;
                 default:
                     System.out.println("Invalid command.");

@@ -58,15 +58,17 @@ public class NGramMap {
 
     public TimeSeries<Double> weightHistory(String word, Integer... years) {
         TimeSeries<Double> ts = new TimeSeries<Double>();
-        for(Map.Entry<Integer, Integer> entry : word_stats.get(word).entrySet()) {
-            if(years.length == 0) {
-                double data = total_words.get(entry.getKey());
-                ts.put(entry.getKey(), entry.getValue()/data);
-            }
-            else {
-                if((years[0] <= entry.getKey()) && (years[1] >= entry.getKey())){
+        if(word_stats.containsKey(word)) {
+            for(Map.Entry<Integer, Integer> entry : word_stats.get(word).entrySet()) {
+                if(years.length == 0) {
                     double data = total_words.get(entry.getKey());
                     ts.put(entry.getKey(), entry.getValue()/data);
+                }
+                else {
+                    if((years[0] <= entry.getKey()) && (years[1] >= entry.getKey())){
+                        double data = total_words.get(entry.getKey());
+                        ts.put(entry.getKey(), entry.getValue()/data);
+                    }
                 }
             }
         }
@@ -76,14 +78,26 @@ public class NGramMap {
     public TimeSeries<Double> summedWeightHistory(ArrayList<String> words, Integer... years) {
         TimeSeries<Double> ts = new TimeSeries<Double>();
         for(String word : words) {
+            if(word == null)
+                continue;
             TimeSeries<Double> temp = new TimeSeries<Double>();
             temp = weightHistory(word);
             for(Map.Entry<Integer, Double> entry : temp.entrySet()) {
-                if(ts.containsKey(entry.getKey())) {
-                  ts.put(entry.getKey(), ts.get(entry.getKey())+ entry.getValue());
+                if(years.length == 0) {
+                    if(ts.containsKey(entry.getKey())) {
+                        ts.put(entry.getKey(), ts.get(entry.getKey())+ entry.getValue());
+                    }
+                    else {
+                        ts.put(entry.getKey(), entry.getValue());
+                    }
                 }
-                else {
-                  ts.put(entry.getKey(), entry.getValue());
+                else if((years[0] <= entry.getKey()) && (years[1] >= entry.getKey())){
+                    if(ts.containsKey(entry.getKey())) {
+                        ts.put(entry.getKey(), ts.get(entry.getKey())+ entry.getValue());
+                    }
+                    else {
+                        ts.put(entry.getKey(), entry.getValue());
+                    }
                 }
             }
         }

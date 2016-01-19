@@ -89,6 +89,19 @@ public class NgordnetUI {
                     plotter.plotAllWords(ngm, temp_words.toArray(array_words), startDate, endDate);
 
                     break;
+                case "wordlength":
+                    ngm = new NGramMap("/Users/sastaputhra/HomeWork/cs61b_spring/skeleton/proj1/demos/ngrams/all_words.csv",
+                                    "/Users/sastaputhra/HomeWork/cs61b_spring/skeleton/proj1/demos/ngrams/total_counts.csv");
+                    WordLengthProcessor yrp = new WordLengthProcessor();
+                    plotter.plotProcessedHistory(ngm, startDate, endDate, yrp);
+                    break;
+                case "zipf":
+                    ngm = new NGramMap("/Users/sastaputhra/HomeWork/cs61b_spring/skeleton/proj1/demos/ngrams/all_words.csv",
+                                    "/Users/sastaputhra/HomeWork/cs61b_spring/skeleton/proj1/demos/ngrams/total_counts.csv");
+
+                    plotter.plotZipfsLaw(ngm, Integer.parseInt(tokens[0]));
+
+                    break;
                 default:
                     System.out.println("Invalid command.");
                     break;

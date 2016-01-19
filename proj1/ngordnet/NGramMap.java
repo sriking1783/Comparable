@@ -8,6 +8,7 @@ import java.util.Set;
 import java.util.ArrayList;
 import java.io.*;
 import java.util.Arrays;
+import java.util.Collection;
 public class NGramMap {
 
     private TreeMap<String, TreeMap<Integer, Integer>> word_stats;
@@ -30,6 +31,16 @@ public class NGramMap {
                 yearly_stats.put(entry.getKey(), entry.getValue().get(year));
         }
         return new YearlyRecord(yearly_stats);
+    }
+
+    public TimeSeries<Double> processedHistory(int startYear, int endYear, YearlyRecordProcessor yrp) {
+        TimeSeries<Double> ts = new TimeSeries<Double>();
+        for(int year = startYear; year <= endYear; year++) {
+            double temp = yrp.process(getRecord(startYear));
+            ts.put(year, temp);
+        }
+        return ts;
+
     }
 
     public TimeSeries<Integer> countHistory(String word, Integer... years) {

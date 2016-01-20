@@ -87,9 +87,7 @@ public class Plotter {
 
         for (String word : words) {
             TimeSeries bundle = ngm.weightHistory(word, startYear, endYear);
-            if(!bundle.data().isEmpty()) {
-                chart.addSeries(word, bundle.years(), bundle.data());
-            }
+            chart.addSeries(word, bundle.years(), bundle.data());
         }
         new SwingWrapper(chart).displayChart();
     }

@@ -11,22 +11,25 @@ import java.util.Arrays;
 import java.util.Collection;
 public class NGramMap {
 
-    private TreeMap<String, TreeMap<Integer, Integer>> word_stats;
-    private TreeMap<Integer, Long> total_words;
+    private TreeMap<String, TimeSeries<Integer>> word_stats;
+    private TimeSeries<Long> total_words;
     public NGramMap(String words_file, String total_counts_file) {
-        word_stats = new TreeMap<String, TreeMap<Integer, Integer>>();
-        total_words = new TreeMap<Integer, Long>();
+        word_stats = new TreeMap<String, TimeSeries<Integer>>();
+        total_words = new TimeSeries<Long>();
         read_words_file(words_file);
         read_total_counts_file(total_counts_file);
     }
 
     public Integer countInYear(String word, int year) {
+        if(word_stats.get(word) == null || word_stats.get(word).get(year) == null) {
+            return 0;
+        }
         return word_stats.get(word).get(year);
     }
 
     public YearlyRecord getRecord(int year) {
         HashMap<String, Integer> yearly_stats = new HashMap<String, Integer>();
-        for(Map.Entry<String, TreeMap<Integer, Integer>> entry : word_stats.entrySet()) {
+        for(Map.Entry<String, TimeSeries<Integer>> entry : word_stats.entrySet()) {
             if(entry.getValue().containsKey(year))
                 yearly_stats.put(entry.getKey(), entry.getValue().get(year));
         }
@@ -45,13 +48,13 @@ public class NGramMap {
 
     public TimeSeries<Integer> countHistory(String word, Integer... years) {
         TimeSeries<Integer> ts = new TimeSeries<Integer>();
-        for(Map.Entry<Integer, Integer> entry : word_stats.get(word).entrySet()) {
-            if(years.length == 0) {
-                ts.put(entry.getKey(), entry.getValue());
-            }
-            else {
-                if((years[0] >= entry.getKey()) && (years[1] <= entry.getKey())){
-                    ts.put(entry.getKey(), entry.getValue());
+        if(years.length == 0) {
+            return word_stats.get(word);
+        }
+        else {
+            for(int year = years[0]; year <= years[1]; year++) {
+                if(countInYear(word, year) != 0) {
+                    ts.put(year, countInYear(word, year));
                 }
             }
         }
@@ -59,31 +62,17 @@ public class NGramMap {
     }
 
     public TimeSeries<Long> totalCountHistory() {
-        TimeSeries<Long> ts = new TimeSeries<Long>();
-        for(Map.Entry<Integer, Long> entry : total_words.entrySet()) {
-           ts.put(entry.getKey(), entry.getValue());
-        }
-
-        return ts;
+        return total_words;
     }
 
     public TimeSeries<Double> weightHistory(String word, Integer... years) {
         TimeSeries<Double> ts = new TimeSeries<Double>();
-        if(word_stats.containsKey(word)) {
-            for(Map.Entry<Integer, Integer> entry : word_stats.get(word).entrySet()) {
-                if(years.length == 0) {
-                    double data = total_words.get(entry.getKey());
-                    ts.put(entry.getKey(), entry.getValue()/data);
-                }
-                else {
-                    if((years[0] <= entry.getKey()) && (years[1] >= entry.getKey())){
-                        double data = total_words.get(entry.getKey());
-                        ts.put(entry.getKey(), entry.getValue()/data);
-                    }
-                }
-            }
+        if(years.length == 0) {
+            return countHistory(word).dividedBy(totalCountHistory());
         }
-        return ts;
+        else {
+            return countHistory(word, years[0], years[1]).dividedBy(totalCountHistory());
+        }
     }
 
     public TimeSeries<Double> summedWeightHistory(ArrayList<String> words, Integer... years) {
@@ -123,13 +112,14 @@ public class NGramMap {
                 String[] retval = line.split("\t");
                 int year = Integer.parseInt(retval[1]);
                 int count = Integer.parseInt(retval[2]);
+                TimeSeries<Integer> temp = new TimeSeries<Integer>();
                 if(word_stats.containsKey(retval[0])) {
                     word_stats.get(retval[0]).put(year, count);
                 }
                 else {
-                    TreeMap<Integer, Integer> temp_year_counts = new TreeMap<Integer, Integer>();
-                    temp_year_counts.put(year, year);
-                    word_stats.put(retval[0], temp_year_counts);
+                    temp.clear();
+                    temp.put(year, year);
+                    word_stats.put(retval[0], temp);
                 }
             }
         }

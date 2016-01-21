@@ -78,7 +78,7 @@ public class NGramMap {
     public TimeSeries<Double> summedWeightHistory(ArrayList<String> words, Integer... years) {
         TimeSeries<Double> ts = new TimeSeries<Double>();
         for(String word : words) {
-            if(word == null)
+            if(!word_stats.containsKey(word))
                 continue;
             TimeSeries<Double> temp = new TimeSeries<Double>();
             temp = weightHistory(word);

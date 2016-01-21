@@ -80,13 +80,9 @@ public class NgordnetUI {
                         wordnets.addAll(wn.hyponyms(token));
                     }
                     ArrayList<String> temp_words = new ArrayList<String>();
-                    for(String w : wordnets) {
-                        System.out.println(w);
-                        temp_words.add(w);
-                    }
                     String[] array_words = new String[temp_words.size()];
                     int i = 0;
-                    plotter.plotAllWords(ngm, temp_words.toArray(array_words), startDate, endDate);
+                    plotter.plotCategoryWeights(ngm, wn, tokens, startDate, endDate);
 
                     break;
                 case "wordlength":

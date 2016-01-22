@@ -46,60 +46,52 @@ public class NGramMap {
 
     }
 
-    public TimeSeries<Integer> countHistory(String word, Integer... years) {
+    public TimeSeries<Integer> countHistory(String word, int startYear, int endYear) {
         TimeSeries<Integer> ts = new TimeSeries<Integer>();
-        if(years.length == 0) {
-            return word_stats.get(word);
-        }
-        else {
-            for(int year = years[0]; year <= years[1]; year++) {
-                if(countInYear(word, year) != 0) {
-                    ts.put(year, countInYear(word, year));
-                }
+        for(int year = startYear; year <= endYear; year++) {
+            if(countInYear(word, year) != 0) {
+                ts.put(year, countInYear(word, year));
             }
         }
         return ts;
+    }
+
+    public TimeSeries<Integer> countHistory(String word) {
+        return word_stats.get(word);
     }
 
     public TimeSeries<Long> totalCountHistory() {
         return total_words;
     }
 
-    public TimeSeries<Double> weightHistory(String word, Integer... years) {
-        TimeSeries<Double> ts = new TimeSeries<Double>();
-        if(years.length == 0) {
-            return countHistory(word).dividedBy(totalCountHistory());
-        }
-        else {
-            return countHistory(word, years[0], years[1]).dividedBy(totalCountHistory());
-        }
+    public TimeSeries<Double> weightHistory(String word, int startYear, int endYear) {
+        return countHistory(word, startYear, endYear).dividedBy(totalCountHistory());
     }
 
-    public TimeSeries<Double> summedWeightHistory(ArrayList<String> words, Integer... years) {
+    public TimeSeries<Double> weightHistory(String word) {
+        return countHistory(word).dividedBy(totalCountHistory());
+    }
+
+
+    public TimeSeries<Double> summedWeightHistory(ArrayList<String> words, int startYear, int endYear) {
         TimeSeries<Double> ts = new TimeSeries<Double>();
         for(String word : words) {
             if(!word_stats.containsKey(word))
                 continue;
             TimeSeries<Double> temp = new TimeSeries<Double>();
             temp = weightHistory(word);
-            for(Map.Entry<Integer, Double> entry : temp.entrySet()) {
-                if(years.length == 0) {
-                    if(ts.containsKey(entry.getKey())) {
-                        ts.put(entry.getKey(), ts.get(entry.getKey())+ entry.getValue());
-                    }
-                    else {
-                        ts.put(entry.getKey(), entry.getValue());
-                    }
-                }
-                else if((years[0] <= entry.getKey()) && (years[1] >= entry.getKey())){
-                    if(ts.containsKey(entry.getKey())) {
-                        ts.put(entry.getKey(), ts.get(entry.getKey())+ entry.getValue());
-                    }
-                    else {
-                        ts.put(entry.getKey(), entry.getValue());
-                    }
-                }
-            }
+            ts = ts.plus(weightHistory(word, startYear, endYear));
+        }
+        return ts;
+    }
+
+    public TimeSeries<Double> summedWeightHistory(ArrayList<String> words) {
+        TimeSeries<Double> ts = new TimeSeries<Double>();
+        for(String word : words) {
+            if(!word_stats.containsKey(word))
+                continue;
+            TimeSeries<Double> temp = new TimeSeries<Double>();
+            ts = ts.plus(weightHistory(word));
         }
         return ts;
     }

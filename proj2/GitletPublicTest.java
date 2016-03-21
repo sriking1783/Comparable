@@ -19,20 +19,20 @@ import org.junit.Test;
 /**
  * Class that provides JUnit tests for Gitlet, as well as a couple of utility
  * methods.
- * 
+ *
  * @author Joseph Moghadam
- * 
+ *
  *         Some code adapted from StackOverflow:
- * 
+ *
  *         http://stackoverflow.com/questions
  *         /779519/delete-files-recursively-in-java
- * 
+ *
  *         http://stackoverflow.com/questions/326390/how-to-create-a-java-string
  *         -from-the-contents-of-a-file
- * 
+ *
  *         http://stackoverflow.com/questions/1119385/junit-test-for-system-out-
  *         println
- * 
+ *
  */
 public class GitletPublicTest {
     private static final String GITLET_DIR = ".gitlet/";
@@ -44,7 +44,7 @@ public class GitletPublicTest {
     /**
      * Deletes existing gitlet system, resets the folder that stores files used
      * in testing.
-     * 
+     *
      * This method runs before every @Test method. This is important to enforce
      * that all tests are independent and do not interact with one another.
      */
@@ -114,10 +114,10 @@ public class GitletPublicTest {
      * Convenience method for calling Gitlet's main. Anything that is printed
      * out during this call to main will NOT actually be printed out, but will
      * instead be returned as a string from this method.
-     * 
+     *
      * Prepares a 'yes' answer on System.in so as to automatically pass through
      * dangerous commands.
-     * 
+     *
      * The '...' syntax allows you to pass in an arbitrary number of String
      * arguments, which are packaged into a String[].
      */
@@ -232,4 +232,9 @@ public class GitletPublicTest {
         }
         return messages;
     }
+
+    public static void main(String[] args) {
+          System.exit(jh61b.junit.textui.runClasses(GitletPublicTest.class));
+    }
+
 }

@@ -11,7 +11,7 @@ import java.io.File;
 public class Commit implements java.io.Serializable {
     private Commit previous;
     private String message;
-    private int commit_id;
+    private String commit_id;
     private String branch_name;
     private Tree tree;
 
@@ -22,14 +22,15 @@ public class Commit implements java.io.Serializable {
     public Commit(String message, Commit previous, String branchName, HashMap<String, String> file_contents) {
         this.message = message;
         this.previous = previous;
-        this.commit_id = Math.abs(this.hashCode());
+        this.commit_id = new ShaHash().cryptMessage(this.toString());
         this.branch_name = branchName;
         this.tree = new Tree();
         this.tree.serializeTree(System.getProperty("user.dir")+"/"+".gitlet"+"/objects/"+this.tree.getTreeId());
-        this.tree.serializeFiles(System.getProperty("user.dir")+"/"+".gitlet"+"/objects", file_contents);
+        if(file_contents != null)
+            this.tree.setFileLocations(file_contents);
     }
 
-   public int getCommitId() {
+   public String getCommitId() {
        return this.commit_id;
    }
 
@@ -45,7 +46,7 @@ public class Commit implements java.io.Serializable {
 
            br = new BufferedReader(new FileReader(filePathString));
            while ((sCurrentLine = br.readLine()) != null) {
-               return getCommit(Integer.parseInt(sCurrentLine));
+               return getCommit(sCurrentLine);
            }
        } catch (IOException e) {
               e.printStackTrace();
@@ -53,8 +54,8 @@ public class Commit implements java.io.Serializable {
        return null;
    }
 
-   public static Commit getCommit(int commit_id) {
-       String filePathString = System.getProperty("user.dir")+"/"+".gitlet"+"/objects/"+Integer.toString(commit_id);
+   public static Commit getCommit(String commit_id) {
+       String filePathString = System.getProperty("user.dir")+"/"+".gitlet"+"/objects/"+commit_id;
        File f = new File(filePathString);
        if(f.exists() && !f.isDirectory()) {
            return deserializeCommit(filePathString);
@@ -88,5 +89,10 @@ public class Commit implements java.io.Serializable {
             ex.printStackTrace();
         }
     }
+
+   @Override
+   public String toString() {
+       return new StringBuffer(" Message  ").append(this.message).toString();
+   }
 
 }

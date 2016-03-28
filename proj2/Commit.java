@@ -24,10 +24,15 @@ public class Commit implements java.io.Serializable {
         this.previous = previous;
         this.commit_id = new ShaHash().cryptMessage(this.toString());
         this.branch_name = branchName;
-        this.tree = new Tree();
+        if(file_contents != null) {
+            System.out.println("Setting file_contents!!!");
+            this.tree = new Tree(file_contents);
+        }
+        else {
+            this.tree = new Tree();
+          }
         this.tree.serializeTree(System.getProperty("user.dir")+"/"+".gitlet"+"/objects/"+this.tree.getTreeId());
-        if(file_contents != null)
-            this.tree.setFileLocations(file_contents);
+        
     }
 
    public String getCommitId() {
@@ -35,7 +40,8 @@ public class Commit implements java.io.Serializable {
    }
 
    public Tree getTree() {
-       return this.tree;
+       System.out.println(this.tree.getTreeId());
+       return this.tree.getTree(this.tree.getTreeId());
    }
 
    public static Commit getHead() {
@@ -90,9 +96,9 @@ public class Commit implements java.io.Serializable {
         }
     }
 
-   @Override
+   /*@Override
    public String toString() {
        return new StringBuffer(" Message  ").append(this.message).toString();
-   }
+   }*/
 
 }

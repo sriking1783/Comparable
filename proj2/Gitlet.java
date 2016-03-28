@@ -44,7 +44,7 @@ public class Gitlet {
                 break;
             case "status":
                 System.out.println(getCurrentCommit());
-                System.out.println(getCurrentTree());
+                //System.out.println(getCurrentTree());
                 checkFiles();
                 break;
             case "checkout":
@@ -84,6 +84,8 @@ public class Gitlet {
             file.delete();
         }
         head = new Commit(message, head, "master" ,files);
+        head.serializeCommit(System.getProperty("user.dir")+"/"+".gitlet"+"/objects/"+head.getCommitId());
+        writeHead();
     }
     private static Commit getCurrentCommit() {
         return Commit.getHead();
@@ -106,7 +108,6 @@ public class Gitlet {
             if(listOfFiles == null || listOfFiles.length == 0) {
                 return files;
             }
-            System.out.println(listOfFiles[0]);
             FileInputStream fis = new FileInputStream(listOfFiles[0]);
             ObjectInputStream ois = new ObjectInputStream(fis);
             files = (Set<String>) ois.readObject();
@@ -181,7 +182,38 @@ public class Gitlet {
         }
     }
 
+    private static Set<String> checkExistingFiles() {
+        Set<String> new_files = new HashSet<String>();
+        File folder_objects = new File(System.getProperty("user.dir")+"/"+".gitlet/objects/");
+        File[] listOfFilesObjects = folder_objects.listFiles();
+        for (int i = 0; i < listOfFilesObjects.length; i++) {
+            System.out.println(listOfFilesObjects[i].getName());
+        }
+
+        File folder = new File(System.getProperty("user.dir")+"/");
+        File[] listOfFiles = folder.listFiles();
+        try {
+            System.out.println("This is Commit");
+            String commit = readFile(System.getProperty("user.dir")+"/.gitlet/refs/remotes/origin/master");
+            head = Commit.getCommit(commit);
+            /*System.out.println("Commit - "+commit);
+            System.out.println("Head - "+head);
+            System.out.println("Tree - "+head.getTree());*/
+            HashMap<String, String> file_locations = head.getTree().getFiles();
+            System.out.println("File LOCATIONS ---- "+file_locations);
+            for (int i = 0; i < listOfFiles.length; i++) {
+                if(!listOfFiles[i].isDirectory() && ignoreFiles(listOfFiles[i].getName())) {
+                    System.out.println(listOfFiles[i].getName());
+                }
+            }
+          } catch(IOException ie) {
+                ie.printStackTrace();
+          }
+        return new_files;
+    }
+
     private static Set<String> newFiles() {
+        checkExistingFiles();
         Set<String> new_files = new HashSet<String>();
         HashMap<String, String> file_locations = getFiles();
         File folder = new File(System.getProperty("user.dir"));
@@ -256,6 +288,18 @@ public class Gitlet {
         new File(System.getProperty("user.dir")+"/"+".gitlet"+"/refs/remotes").mkdir();
         new File(System.getProperty("user.dir")+"/"+".gitlet"+"/refs/remotes/origin").mkdir();
 
+    }
+
+    private static void writeHead() {
+        try {
+            File file = new File(System.getProperty("user.dir")+"/"+".gitlet"+"/refs/remotes/origin/master");
+            FileOutputStream fooStream = new FileOutputStream(file, false);
+            byte[] myBytes = head.getCommitId().getBytes();
+            fooStream.write(myBytes);
+            fooStream.close();
+        } catch(IOException e) {
+            e.printStackTrace();
+        }
     }
 
     private static void saveHead() {

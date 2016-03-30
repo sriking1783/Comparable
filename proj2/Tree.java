@@ -37,7 +37,6 @@ public class Tree implements java.io.Serializable {
 
     public HashMap<String, String> getFiles() {
         Tree tree = Tree.getTree(this.tree_id);
-        System.out.println("Tree ID: "+tree.tree_id+" -- "+this.tree_id+" -- "+tree.file_locations);
         return Tree.getTree(this.tree_id).file_locations;
     }
 

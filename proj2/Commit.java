@@ -8,13 +8,16 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.ObjectInputStream;
 import java.io.File;
+import java.sql.Timestamp;
+import java.util.Date;
 public class Commit implements java.io.Serializable {
     private Commit previous;
     private String message;
     private String commit_id;
     private String branch_name;
     private Tree tree;
-
+    private Timestamp commit_time;
+    private int commit_count;
     public Commit() {
         this("initial commit", null, "master", null);
     }
@@ -22,25 +25,45 @@ public class Commit implements java.io.Serializable {
     public Commit(String message, Commit previous, String branchName, HashMap<String, String> file_contents) {
         this.message = message;
         this.previous = previous;
+        if(previous == null)
+            this.commit_count = 0;
+        else
+            this.commit_count = previous.getCommitCount() + 1;
+
         this.commit_id = new ShaHash().cryptMessage(this.toString());
         this.branch_name = branchName;
         if(file_contents != null) {
-            System.out.println("Setting file_contents!!!");
             this.tree = new Tree(file_contents);
         }
         else {
             this.tree = new Tree();
           }
         this.tree.serializeTree(System.getProperty("user.dir")+"/"+".gitlet"+"/objects/"+this.tree.getTreeId());
-        
+        Date date = new Date();
+        commit_time = new Timestamp(date.getTime());
+    }
+
+    public int getCommitCount() {
+        return this.commit_count;
     }
 
    public String getCommitId() {
        return this.commit_id;
    }
+   public Commit getPrevious() {
+       return this.previous;
+   }
+
+   public String commitSummary() {
+       return new StringBuilder().append("====\n")
+                                 .append("Commit "+commit_count+" \n")
+                                 .append(commit_time.toString())
+                                 .append("\n")
+                                 .append(message)
+                                 .append("\n\n").toString();
+   }
 
    public Tree getTree() {
-       System.out.println(this.tree.getTreeId());
        return this.tree.getTree(this.tree.getTreeId());
    }
 

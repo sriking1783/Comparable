@@ -26,7 +26,7 @@ public class Gitlet {
             System.out.println("Enter any argument");
             return ;
           }
-        System.out.println(args[0]);
+        instantiateHead();
         switch(args[0]){
             case "init":
                 createFolderAndCommit();
@@ -37,14 +37,12 @@ public class Gitlet {
             case "commit":
                 createCommit(args[1]);
             case "log":
-                break;
+                System.out.println(showLog());
             case "global-log":
                 break;
             case "find":
                 break;
             case "status":
-                System.out.println(getCurrentCommit());
-                //System.out.println(getCurrentTree());
                 checkFiles();
                 break;
             case "checkout":
@@ -64,22 +62,52 @@ public class Gitlet {
         }
     }
 
+    private static void instantiateHead() {
+        File f = new File(System.getProperty("user.dir")+"/.gitlet/refs/remotes/origin/master");
+        try {
+            if(f.exists()) {
+                String commit = readFile(System.getProperty("user.dir")+"/.gitlet/refs/remotes/origin/master");
+                head = Commit.getCommit(commit);
+            }
+        } catch(IOException ie) {
+            ie.printStackTrace();
+        }
+    }
+
+    private static String showLog() {
+        try {
+            String commit = readFile(System.getProperty("user.dir")+"/.gitlet/refs/remotes/origin/master");
+            Commit temp = Commit.getCommit(commit);
+            String log = "";
+            while(temp != null) {
+                log = log + temp.commitSummary();
+                temp = temp.getPrevious();
+            }
+            return log;
+          } catch(IOException ie) {
+              ie.printStackTrace();
+          }
+
+          return null;
+    }
+
     private static void createCommit(String message) {
         HashMap<String, String> files = new HashMap<String, String>();
         Set<String> staged_files = new HashSet<String>();
         staged_files = stagedFiles();
         File folder = new File(System.getProperty("user.dir")+"/"+".gitlet"+"/objects/staged");
         File[] listOfFiles = folder.listFiles();
+        String commit = null;
+
         try {
             for(String staged_file : staged_files) {
                 files.put(staged_file, readFile(staged_file));
-
             }
+            commit = readFile(System.getProperty("user.dir")+"/.gitlet/refs/remotes/origin/master");
         } catch(IOException i)
         {
             i.printStackTrace();
         }
-
         for(File file : listOfFiles) {
             file.delete();
         }
@@ -193,17 +221,15 @@ public class Gitlet {
         File folder = new File(System.getProperty("user.dir")+"/");
         File[] listOfFiles = folder.listFiles();
         try {
-            System.out.println("This is Commit");
             String commit = readFile(System.getProperty("user.dir")+"/.gitlet/refs/remotes/origin/master");
             head = Commit.getCommit(commit);
-            /*System.out.println("Commit - "+commit);
-            System.out.println("Head - "+head);
-            System.out.println("Tree - "+head.getTree());*/
+
             HashMap<String, String> file_locations = head.getTree().getFiles();
-            System.out.println("File LOCATIONS ---- "+file_locations);
             for (int i = 0; i < listOfFiles.length; i++) {
                 if(!listOfFiles[i].isDirectory() && ignoreFiles(listOfFiles[i].getName())) {
-                    System.out.println(listOfFiles[i].getName());
+                    if(file_locations != null && !file_locations.containsKey(listOfFiles[i].getName())) {
+                        System.out.println(listOfFiles[i].getName());
+                    }
                 }
             }
           } catch(IOException ie) {
@@ -236,28 +262,39 @@ public class Gitlet {
     }
 
     private static Set<String> unstagedFiles() {
-        HashMap<String, String> file_locations = getFiles();
+        //HashMap<String, String> file_locations = getFiles();
         Set<String> unstaged_files = new HashSet<String>();
-        if(file_locations == null || file_locations.isEmpty()) {
-            return unstaged_files;
-        }
-        Iterator it = file_locations.entrySet().iterator();
-        String file_content, current_file_content;
-        while (it.hasNext()) {
-            Map.Entry pair = (Map.Entry)it.next();
-            try {
-                    file_content = readFile(System.getProperty("user.dir")+"/"+".gitlet/objects/"+pair.getValue());
-                    current_file_content = readFile(System.getProperty("user.dir")+"/"+pair.getKey());
-                    if(!current_file_content.equals(file_content)){
-                        System.out.println("Adding "+pair.getKey().toString());
-                        unstaged_files.add(pair.getKey().toString());
-                    }
+
+        try {
+            String commit = readFile(System.getProperty("user.dir")+"/.gitlet/refs/remotes/origin/master");
+            head = Commit.getCommit(commit);
+            HashMap<String, String> file_locations = head.getTree().getFiles();
+            if(file_locations == null || file_locations.isEmpty()) {
+                return unstaged_files;
             }
-            catch(IOException i)
-            {
+            Iterator it = file_locations.entrySet().iterator();
+            String file_content, current_file_content;
+            while (it.hasNext()) {
+                Map.Entry pair = (Map.Entry)it.next();
+                try {
+                        file_content = readFile(System.getProperty("user.dir")+"/"+".gitlet/objects/"+pair.getValue());
+                        current_file_content = readFile(System.getProperty("user.dir")+"/"+pair.getKey());
+                        if(!current_file_content.equals(file_content)){
+                            if(file_locations != null && !file_locations.containsKey(pair.getKey().toString())) {
+                                unstaged_files.add(pair.getKey().toString());
+                            }
+                        }
+                }
+                catch(IOException i)
+                {
+                    i.printStackTrace();
+                }
+            }
+          }
+          catch(IOException i)
+          {
                 i.printStackTrace();
-            }
-        }
+          }
         return unstaged_files;
     }
 
@@ -293,7 +330,11 @@ public class Gitlet {
     private static void writeHead() {
         try {
             File file = new File(System.getProperty("user.dir")+"/"+".gitlet"+"/refs/remotes/origin/master");
+            //String commit = readFile(System.getProperty("user.dir")+"/.gitlet/refs/remotes/origin/master");
+            //head = Commit.getCommit(commit);
+            System.out.println(head);
             FileOutputStream fooStream = new FileOutputStream(file, false);
+            head.getCommitId();
             byte[] myBytes = head.getCommitId().getBytes();
             fooStream.write(myBytes);
             fooStream.close();

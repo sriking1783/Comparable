@@ -93,27 +93,25 @@ public class Tree implements java.io.Serializable {
 
     }
 
-    public HashMap<String, String>  deserializeFiles(String file_path) {
-       HashMap<String, String>  files = new HashMap<String, String>();
-        Iterator it = file_locations.entrySet().iterator();
-        while (it.hasNext()) {
-            Map.Entry pair = (Map.Entry)it.next();
-            try {
-              FileInputStream fileIn = new FileInputStream(file_path+"/" + new ShaHash().cryptMessage(pair.getValue().toString()));
-              ObjectInputStream ois = new ObjectInputStream(fileIn);
-              files.put(pair.getKey().toString(), (String) ois.readObject());
-              ois.close();
-              fileIn.close();
-            } catch(IOException i)
-            {
-                i.printStackTrace();
-            }
-            catch(ClassNotFoundException i)
-            {
-                i.printStackTrace();
-            }
+    public static String  deserializeFile(String file_path) {
+      String content = null;
+      try {
+          FileInputStream fileIn = new FileInputStream(file_path);
+          ObjectInputStream ois = new ObjectInputStream(fileIn);
+          content = (String) ois.readObject();
+          ois.close();
+          fileIn.close();
+          return content;
+        } catch(IOException i)
+        {
+            i.printStackTrace();
         }
-        return files;
+        catch(ClassNotFoundException i)
+        {
+            i.printStackTrace();
+        }
+
+        return content;
     }
 
     public String getTreeId() {

@@ -48,6 +48,7 @@ public class Gitlet {
             case "checkout":
                 break;
             case "branch":
+                createBranch(args[1]);
                 break;
             case "rm-branch":
                 break;
@@ -59,6 +60,23 @@ public class Gitlet {
                 break;
             case "i-rebase":
                 break;
+        }
+    }
+
+    private static void createBranch(String branch_name) {
+       try {
+            File file = new File(System.getProperty("user.dir")+"/"+".gitlet"+"/refs/remotes/origin/"+branch_name);
+            FileOutputStream fooStream = new FileOutputStream(file, false);
+            byte[] myBytes = head.getCommitId().getBytes();
+            fooStream.write(myBytes);
+            fooStream.close();
+            File head_file = new File(System.getProperty("user.dir")+"/"+".gitlet"+"/HEAD");
+            FileOutputStream fooStream1 = new FileOutputStream(head_file, false);
+            byte[] myBytes1 = ("/refs/remotes/origin/"+branch_name).getBytes();
+            fooStream1.write(myBytes1);
+            fooStream1.close();
+        } catch(IOException e) {
+            e.printStackTrace();
         }
     }
 
@@ -277,10 +295,10 @@ public class Gitlet {
             while (it.hasNext()) {
                 Map.Entry pair = (Map.Entry)it.next();
                 try {
-                        file_content = readFile(System.getProperty("user.dir")+"/"+".gitlet/objects/"+pair.getValue());
+                        file_content = Tree.deserializeFile(System.getProperty("user.dir")+"/"+".gitlet/objects/"+pair.getValue());
                         current_file_content = readFile(System.getProperty("user.dir")+"/"+pair.getKey());
                         if(!current_file_content.equals(file_content)){
-                            if(file_locations != null && !file_locations.containsKey(pair.getKey().toString())) {
+                            if(file_locations != null ) {
                                 unstaged_files.add(pair.getKey().toString());
                             }
                         }
@@ -346,11 +364,18 @@ public class Gitlet {
     private static void saveHead() {
         try {
             File file = new File(System.getProperty("user.dir")+"/"+".gitlet"+"/refs/remotes/origin/master");
+            File head_file = new File(System.getProperty("user.dir")+"/"+".gitlet"+"/HEAD");
             file.createNewFile();
+            head_file.createNewFile();
             FileWriter fw = new FileWriter(file.getAbsoluteFile());
             BufferedWriter bw = new BufferedWriter(fw);
             bw.write(head.getCommitId());
             bw.close();
+
+            FileWriter fw1 = new FileWriter(head_file.getAbsoluteFile());
+            BufferedWriter bw1 = new BufferedWriter(fw1);
+            bw1.write("refs/remotes/origin/master");
+            bw1.close();
         } catch(IOException i)
         {
             i.printStackTrace();

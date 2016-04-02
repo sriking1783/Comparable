@@ -67,8 +67,8 @@ public class Commit implements java.io.Serializable {
        return this.tree.getTree(this.tree.getTreeId());
    }
 
-   public static Commit getHead() {
-       String filePathString = System.getProperty("user.dir")+"/"+".gitlet"+"/refs/remotes/origin/master";
+   public static Commit getHead(String branch) {
+       String filePathString = System.getProperty("user.dir")+"/"+".gitlet"+"/refs/remotes/origin/"+branch;
        BufferedReader br = null;
        try {
            String sCurrentLine;

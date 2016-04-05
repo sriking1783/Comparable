@@ -30,7 +30,7 @@ public class Commit implements java.io.Serializable {
         else
             this.commit_count = previous.getCommitCount() + 1;
 
-        this.commit_id = new ShaHash().cryptMessage(this.toString());
+
         this.branch_name = branchName;
         if(file_contents != null) {
             this.tree = new Tree(file_contents);
@@ -41,6 +41,7 @@ public class Commit implements java.io.Serializable {
         this.tree.serializeTree(System.getProperty("user.dir")+"/"+".gitlet"+"/objects/"+this.tree.getTreeId());
         Date date = new Date();
         commit_time = new Timestamp(date.getTime());
+        this.commit_id = new ShaHash().cryptMessage(commit_time.toString() + this.toString());
     }
 
     public int getCommitCount() {

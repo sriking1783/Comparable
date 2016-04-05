@@ -52,6 +52,7 @@ public class Gitlet {
             case "checkout":
                 if(checkIfBranch(args[1])) {
                     flipBranch(args[1]);
+                    instantiateFiles(args[1]);
                 }
                 break;
             case "branch":
@@ -141,23 +142,32 @@ public class Gitlet {
             if(f.exists()) {
                 String commit = readFile(System.getProperty("user.dir")+"/.gitlet/refs/remotes/origin/"+currentBranch());
                 head = Commit.getCommit(commit);
-                instantiateFiles();
+
             }
         } catch(IOException ie) {
             ie.printStackTrace();
         }
     }
 
-    private static void instantiateFiles() {
+    private static void instantiateFiles(String branch_name) {
         //ignoreFiles
+        Commit commit = null;
         File dir = new File(System.getProperty("user.dir")+"/");
         for(File file: dir.listFiles()){
             if(ignoreFiles(file.getName()) && (file.isFile())) {
                 file.delete();
-                //System.out.println("deleting "+ file.getName());
             }
         }
-        HashMap<String, String> file_locations = head.getTree().getFiles();
+        try {
+            String commitid = readFile(System.getProperty("user.dir")+"/.gitlet/refs/remotes/origin/"+branch_name);
+            System.out.println("Reading from commit : " + commitid);
+            commit = Commit.getCommit(commitid);
+        }    catch(IOException i)
+            {
+                i.printStackTrace();
+            }
+
+        HashMap<String, String> file_locations = commit.getTree().getFiles();
         Iterator it = file_locations.entrySet().iterator();
         String file_content ;
         File file;
@@ -203,13 +213,12 @@ public class Gitlet {
         staged_files = stagedFiles();
         File folder = new File(System.getProperty("user.dir")+"/"+".gitlet"+"/objects/staged");
         File[] listOfFiles = folder.listFiles();
-        String commit = null;
+        Commit commit = null;
 
         try {
             for(String staged_file : staged_files) {
                 files.put(staged_file, readFile(staged_file));
             }
-            commit = readFile(System.getProperty("user.dir")+"/.gitlet/refs/remotes/origin/"+currentBranch());
         } catch(IOException i)
         {
             i.printStackTrace();
@@ -217,9 +226,10 @@ public class Gitlet {
         for(File file : listOfFiles) {
             file.delete();
         }
-        head = new Commit(message, head, currentBranch() ,files);
-        head.serializeCommit(System.getProperty("user.dir")+"/"+".gitlet"+"/objects/"+head.getCommitId());
-        writeHead();
+        commit = new Commit(message, head, currentBranch() ,files);
+        System.out.println("New Commit : "+commit.getCommitId());
+        commit.serializeCommit(System.getProperty("user.dir")+"/"+".gitlet"+"/objects/"+commit.getCommitId());
+        writeHead(commit);
     }
     private static Commit getCurrentCommit() {
         return Commit.getHead(currentBranch());
@@ -433,12 +443,12 @@ public class Gitlet {
 
     }
 
-    private static void writeHead() {
+    private static void writeHead(Commit commit) {
         try {
             File file = new File(System.getProperty("user.dir")+"/"+".gitlet"+"/refs/remotes/origin/"+currentBranch());
-
+            System.out.println("Writing to file "+file.getName());
             FileOutputStream fooStream = new FileOutputStream(file, false);
-            byte[] myBytes = head.getCommitId().getBytes();
+            byte[] myBytes = commit.getCommitId().getBytes();
             fooStream.write(myBytes);
             fooStream.close();
         } catch(IOException e) {

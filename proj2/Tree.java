@@ -7,18 +7,20 @@ import java.io.ObjectInputStream;
 import java.util.Iterator;
 import java.util.Map;
 import java.io.File;
+import java.sql.Timestamp;
+import java.util.Date;
 public class Tree implements java.io.Serializable {
     private HashMap<String, String> file_locations;
     private String tree_id;
 
     public Tree() {
         file_locations = new HashMap<String, String>();
-        this.tree_id = new ShaHash().cryptMessage(this.toString());
+        this.tree_id = new ShaHash().cryptMessage(new Timestamp(new Date().getTime()).toString()+this.toString());
     }
 
     public Tree(HashMap<String, String> files) {
         file_locations = new HashMap<String, String>();
-        this.tree_id = new ShaHash().cryptMessage(this.toString());
+        this.tree_id = new ShaHash().cryptMessage(new Timestamp(new Date().getTime()).toString()+this.toString());
         setFileLocations(files);
     }
 

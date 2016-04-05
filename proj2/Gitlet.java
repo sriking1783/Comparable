@@ -54,6 +54,9 @@ public class Gitlet {
                     flipBranch(args[1]);
                     instantiateFiles(args[1]);
                 }
+                else if(checkIfFile(args[1])) {
+                    checkOutFileFromBranch(args[1]);
+                }
                 break;
             case "branch":
                 createBranch(args[1]);
@@ -71,10 +74,43 @@ public class Gitlet {
         }
     }
 
+    private static void checkOutFileFromBranch(String file_name) {
+          HashMap<String, String> file_locations = getFiles();
+          Iterator it = file_locations.entrySet().iterator();
+          String file_content ;
+          File file;
+          while (it.hasNext()) {
+              Map.Entry pair = (Map.Entry)it.next();
+              if(pair.getKey().toString().equals(file_name)) {
+                  try {
+                      file_content = Tree.deserializeFile(System.getProperty("user.dir")+"/"+".gitlet/objects/"+pair.getValue());
+                      file = new File(System.getProperty("user.dir")+"/"+pair.getKey());
+
+                      FileOutputStream fooStream = new FileOutputStream(file, false);
+                      byte[] myBytes = file_content.getBytes();
+                      fooStream.write(myBytes);
+                      fooStream.close();
+
+                  }
+                  catch(IOException i)
+                  {
+                      i.printStackTrace();
+                  }
+              }
+          }
+
+    }
+
     private static boolean checkIfBranch(String branch_name) {
         String[] branches = getBranches();
         return Arrays.asList(branches).contains(branch_name);
     }
+
+    private static boolean checkIfFile(String file_name) {
+        HashMap<String, String> file_locations = getFiles();
+        return file_locations.containsKey(file_name);
+    }
+
     private static void listBranches() {
         System.out.println("=== Branches ===");
         String branch = currentBranch();
@@ -160,12 +196,11 @@ public class Gitlet {
         }
         try {
             String commitid = readFile(System.getProperty("user.dir")+"/.gitlet/refs/remotes/origin/"+branch_name);
-            System.out.println("Reading from commit : " + commitid);
             commit = Commit.getCommit(commitid);
-        }    catch(IOException i)
-            {
-                i.printStackTrace();
-            }
+        } catch(IOException i)
+          {
+              i.printStackTrace();
+          }
 
         HashMap<String, String> file_locations = commit.getTree().getFiles();
         Iterator it = file_locations.entrySet().iterator();

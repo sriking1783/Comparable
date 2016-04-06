@@ -57,6 +57,9 @@ public class Gitlet {
                 else if(checkIfFile(args[1])) {
                     checkOutFileFromBranch(args[1]);
                 }
+                else if(checkIfCommit(args[1])) {
+                    checkOutFileFromCommit(args[1], args[2]);
+                }
                 break;
             case "branch":
                 createBranch(args[1]);
@@ -64,6 +67,9 @@ public class Gitlet {
             case "rm-branch":
                 break;
             case "reset":
+                if(checkIfCommit(args[1])) {
+                    restoreToCommit(args[1]);
+                }
                 break;
             case "merge":
                 break;
@@ -74,31 +80,52 @@ public class Gitlet {
         }
     }
 
+    private static void checkOutFile(HashMap<String, String> file_locations, String file_name) {
+        Iterator it = file_locations.entrySet().iterator();
+        String file_content ;
+        File file;
+        while (it.hasNext()) {
+            Map.Entry pair = (Map.Entry)it.next();
+            if(pair.getKey().toString().equals(file_name)) {
+                try {
+                    file_content = Tree.deserializeFile(System.getProperty("user.dir")+"/"+".gitlet/objects/"+pair.getValue());
+                    file = new File(System.getProperty("user.dir")+"/"+pair.getKey());
+
+                    FileOutputStream fooStream = new FileOutputStream(file, false);
+                    byte[] myBytes = file_content.getBytes();
+                    fooStream.write(myBytes);
+                    fooStream.close();
+
+                }
+                catch(IOException i)
+                {
+                    i.printStackTrace();
+                }
+            }
+        }
+    }
+
+    private static void restoreToCommit(String commit_id) {
+        Commit commit = Commit.getCommit(commit_id);
+        HashMap<String, String> file_locations = commit.getTree().getFiles();
+        File dir = new File(System.getProperty("user.dir")+"/");
+        for(File file: dir.listFiles()){
+            if(ignoreFiles(file.getName()) && (file.isFile())) {
+                file.delete();
+            }
+        }
+        createFiles(file_locations);
+    }
+
+    private static void checkOutFileFromCommit(String commit_id, String file_name) {
+        Commit commit = Commit.getCommit(commit_id);
+        HashMap<String, String> file_locations = commit.getTree().getFiles();
+        checkOutFile(file_locations, file_name);
+    }
+
     private static void checkOutFileFromBranch(String file_name) {
           HashMap<String, String> file_locations = getFiles();
-          Iterator it = file_locations.entrySet().iterator();
-          String file_content ;
-          File file;
-          while (it.hasNext()) {
-              Map.Entry pair = (Map.Entry)it.next();
-              if(pair.getKey().toString().equals(file_name)) {
-                  try {
-                      file_content = Tree.deserializeFile(System.getProperty("user.dir")+"/"+".gitlet/objects/"+pair.getValue());
-                      file = new File(System.getProperty("user.dir")+"/"+pair.getKey());
-
-                      FileOutputStream fooStream = new FileOutputStream(file, false);
-                      byte[] myBytes = file_content.getBytes();
-                      fooStream.write(myBytes);
-                      fooStream.close();
-
-                  }
-                  catch(IOException i)
-                  {
-                      i.printStackTrace();
-                  }
-              }
-          }
-
+          checkOutFile(file_locations, file_name);
     }
 
     private static boolean checkIfBranch(String branch_name) {
@@ -106,6 +133,13 @@ public class Gitlet {
         return Arrays.asList(branches).contains(branch_name);
     }
 
+    private static boolean checkIfCommit(String commit) {
+        File file = new File(System.getProperty("user.dir")+"/.gitlet/objects/"+commit);
+        if(file.exists()) {
+            return true;
+        }
+        return false;
+    }
     private static boolean checkIfFile(String file_name) {
         HashMap<String, String> file_locations = getFiles();
         return file_locations.containsKey(file_name);
@@ -185,24 +219,7 @@ public class Gitlet {
         }
     }
 
-    private static void instantiateFiles(String branch_name) {
-        //ignoreFiles
-        Commit commit = null;
-        File dir = new File(System.getProperty("user.dir")+"/");
-        for(File file: dir.listFiles()){
-            if(ignoreFiles(file.getName()) && (file.isFile())) {
-                file.delete();
-            }
-        }
-        try {
-            String commitid = readFile(System.getProperty("user.dir")+"/.gitlet/refs/remotes/origin/"+branch_name);
-            commit = Commit.getCommit(commitid);
-        } catch(IOException i)
-          {
-              i.printStackTrace();
-          }
-
-        HashMap<String, String> file_locations = commit.getTree().getFiles();
+    private static void createFiles(HashMap<String, String> file_locations){
         Iterator it = file_locations.entrySet().iterator();
         String file_content ;
         File file;
@@ -223,6 +240,27 @@ public class Gitlet {
                 i.printStackTrace();
             }
         }
+    }
+
+    private static void instantiateFiles(String branch_name) {
+        //ignoreFiles
+        Commit commit = null;
+        File dir = new File(System.getProperty("user.dir")+"/");
+        for(File file: dir.listFiles()){
+            if(ignoreFiles(file.getName()) && (file.isFile())) {
+                file.delete();
+            }
+        }
+        try {
+            String commitid = readFile(System.getProperty("user.dir")+"/.gitlet/refs/remotes/origin/"+branch_name);
+            commit = Commit.getCommit(commitid);
+        } catch(IOException i)
+          {
+              i.printStackTrace();
+          }
+
+        HashMap<String, String> file_locations = commit.getTree().getFiles();
+        createFiles(file_locations);
     }
 
     private static String showLog() {
@@ -355,42 +393,11 @@ public class Gitlet {
                     System.out.println("File " + listOfFiles[i].getName());
                 }
 
-            } /*else if (listOfFiles[i].isDirectory() && (ignoreFiles(listOfFiles[i].getName()))) {
-                System.out.println("Directory " + listOfFiles[i].getName());
-            }*/
+            }
         }
     }
 
-    /*private static Set<String> checkExistingFiles() {
-        Set<String> new_files = new HashSet<String>();
-        File folder_objects = new File(System.getProperty("user.dir")+"/"+".gitlet/objects/");
-        File[] listOfFilesObjects = folder_objects.listFiles();
-        for (int i = 0; i < listOfFilesObjects.length; i++) {
-            System.out.println(listOfFilesObjects[i].getName());
-        }
-
-        File folder = new File(System.getProperty("user.dir")+"/");
-        File[] listOfFiles = folder.listFiles();
-        try {
-            String commit = readFile(System.getProperty("user.dir")+"/.gitlet/refs/remotes/origin/master");
-            head = Commit.getCommit(commit);
-
-            HashMap<String, String> file_locations = head.getTree().getFiles();
-            for (int i = 0; i < listOfFiles.length; i++) {
-                if(!listOfFiles[i].isDirectory() && ignoreFiles(listOfFiles[i].getName())) {
-                    if(file_locations != null && !file_locations.containsKey(listOfFiles[i].getName())) {
-                        System.out.println(listOfFiles[i].getName());
-                    }
-                }
-            }
-          } catch(IOException ie) {
-                ie.printStackTrace();
-          }
-        return new_files;
-    }*/
-
     private static Set<String> newFiles() {
-        //checkExistingFiles();
         Set<String> new_files = new HashSet<String>();
         HashMap<String, String> file_locations = getFiles();
         File folder = new File(System.getProperty("user.dir"));

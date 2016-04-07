@@ -72,12 +72,88 @@ public class Gitlet {
                 }
                 break;
             case "merge":
+                if(checkIfBranch(args[1])) {
+                    mergeBranch(args[1]);
+                }
                 break;
             case "rebase":
                 break;
             case "i-rebase":
                 break;
         }
+    }
+
+    private static void mergeBranch(String given_branch) {
+        Commit given_commit = null, current_commit = null;
+        try {
+            String branch1_commit = readFile(System.getProperty("user.dir")+"/.gitlet/refs/remotes/origin/"+given_branch);
+            given_commit = Commit.getCommit(branch1_commit);
+
+            String branch2_commit = readFile(System.getProperty("user.dir")+"/.gitlet/refs/remotes/origin/"+given_branch);
+            current_commit = Commit.getCommit(branch2_commit);
+        }catch(IOException i) {
+              i.printStackTrace();
+        }
+        String current_branch = currentBranch();
+        Commit split_point = splitPoint(current_branch, given_branch);
+        HashMap<String, String> split_point_file_locations = split_point.getTree().getFiles();
+        HashMap<String, String> given_branch_file_locations = given_commit.getTree().getFiles();
+        HashMap<String, String> current_branch_file_locations = current_commit.getTree().getFiles();
+
+        String file_content, current_file_content, given_file_content;
+        Iterator it = split_point_file_locations.entrySet().iterator();
+        while (it.hasNext()) {
+            Map.Entry pair = (Map.Entry)it.next();
+            try {
+                file_content = Tree.deserializeFile(System.getProperty("user.dir")+"/"+".gitlet/objects/"+pair.getValue());
+                current_file_content = readFile(System.getProperty("user.dir")+"/"+pair.getKey());
+                given_file_content = Tree.deserializeFile(System.getProperty("user.dir")+"/"+".gitlet/objects/"+given_file_content.get(pair.getKey()))
+                if(!current_file_content.equals(file_content)){
+                    // Current branch and split point has changed
+                   if(!given_file_content.equals(file_content)) {
+                       // File conflict
+                   } else if(given_file_content.equals(file_content)) {
+                         //Nothing changes
+                     }
+                } else if(current_file_content.equals(file_content)) {
+                     //Current branch and split point has NOT changed
+                     if(!given_file_content.equals(file_content)) {
+                         //The branch has changed so copy over
+                     }
+
+                  }
+            }
+            catch(IOException i)
+            {
+                i.printStackTrace();
+            }
+        }
+    }
+
+    private static Commit splitPoint(String branch1, String branch2) {
+        Commit commit_branch1 = null, commit_branch2 = null;
+        try {
+            String branch1_commit = readFile(System.getProperty("user.dir")+"/.gitlet/refs/remotes/origin/"+branch1);
+            commit_branch1 = Commit.getCommit(branch1_commit);
+
+            String branch2_commit = readFile(System.getProperty("user.dir")+"/.gitlet/refs/remotes/origin/"+branch2);
+            commit_branch2 = Commit.getCommit(branch2_commit);
+        } catch(IOException i) {
+              i.printStackTrace();
+        }
+        Commit temp1 = commit_branch1;
+        Commit temp2 = commit_branch2;
+
+        while (temp1 != null && temp2 != null) {
+            String commit1 = temp1.getCommitId();
+            String commit2 = temp2.getCommitId();
+            if(commit1.equals(commit2)) {
+                  return Commit.getCommit(commit1);
+            }
+            temp1 = temp1.getPrevious();
+            temp2 = temp2.getPrevious();
+        }
+        return null;
     }
 
     private static void checkOutFile(HashMap<String, String> file_locations, String file_name) {
@@ -140,6 +216,7 @@ public class Gitlet {
         }
         return false;
     }
+
     private static boolean checkIfFile(String file_name) {
         HashMap<String, String> file_locations = getFiles();
         return file_locations.containsKey(file_name);

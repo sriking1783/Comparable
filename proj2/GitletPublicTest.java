@@ -1,7 +1,7 @@
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-
+import java.util.Arrays;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -87,6 +87,37 @@ public class GitletPublicTest {
         writeFile(wugFileName, "This is not a wug.");
         gitlet("checkout", wugFileName);
         assertEquals(wugText, getText(wugFileName));
+    }
+
+    @Test
+    public void testBasicMerge() {
+        String wugFileName =  "wug.txt";
+        String wugText = "This is a wug.";
+        createFile(wugFileName, wugText);
+        gitlet("init");
+        gitlet("add", wugFileName);
+
+        gitlet("commit", "added wug");
+        writeFile(wugFileName, "This is a wug.");
+        gitlet("add", wugFileName);
+        gitlet("commit", "added text wug");
+        assertEquals("This is a wug.", getText(wugFileName));
+        gitlet("branch", "test");
+        writeFile(wugFileName, "This is not a wug.");
+        gitlet("add", wugFileName);
+        gitlet("commit", "Test to wug");
+        assertEquals("This is not a wug.", getText(wugFileName));
+        gitlet("checkout", "master");
+        gitlet("merge", "test");
+        assertEquals("This is not a wug.", getText(wugFileName));
+
+        /*gitlet("commit", "Test commit to wug");
+
+        assertEquals("This is a wug.", getText(wugFileName));
+        gitlet("checkout", "test");
+        assertEquals("This is not a wug.", getText(wugFileName));
+        gitlet("merge", "test");
+        assertEquals("This is not a wug.", getText(wugFileName));*/
     }
 
     /**

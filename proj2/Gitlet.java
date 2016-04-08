@@ -83,19 +83,24 @@ public class Gitlet {
         }
     }
 
-    private static void mergeBranch(String given_branch) {
+    public static void mergeBranch(String given_branch) {
         Commit given_commit = null, current_commit = null;
+        String branch1_commit = "", branch2_commit = "";
+
         try {
-            String branch1_commit = readFile(System.getProperty("user.dir")+"/.gitlet/refs/remotes/origin/"+given_branch);
+            branch1_commit = readFile(System.getProperty("user.dir")+"/.gitlet/refs/remotes/origin/"+given_branch);
             given_commit = Commit.getCommit(branch1_commit);
 
-            String branch2_commit = readFile(System.getProperty("user.dir")+"/.gitlet/refs/remotes/origin/"+given_branch);
+            branch2_commit = readFile(System.getProperty("user.dir")+"/.gitlet/refs/remotes/origin/"+currentBranch());
             current_commit = Commit.getCommit(branch2_commit);
         }catch(IOException i) {
               i.printStackTrace();
         }
         String current_branch = currentBranch();
         Commit split_point = splitPoint(current_branch, given_branch);
+        if(split_point == null) {
+            split_point = current_commit;
+        }
         HashMap<String, String> split_point_file_locations = split_point.getTree().getFiles();
         HashMap<String, String> given_branch_file_locations = given_commit.getTree().getFiles();
         HashMap<String, String> current_branch_file_locations = current_commit.getTree().getFiles();
@@ -107,21 +112,30 @@ public class Gitlet {
             try {
                 file_content = Tree.deserializeFile(System.getProperty("user.dir")+"/"+".gitlet/objects/"+pair.getValue());
                 current_file_content = readFile(System.getProperty("user.dir")+"/"+pair.getKey());
-                given_file_content = Tree.deserializeFile(System.getProperty("user.dir")+"/"+".gitlet/objects/"+given_file_content.get(pair.getKey()))
+                given_file_content = Tree.deserializeFile(System.getProperty("user.dir")+"/"+".gitlet/objects/"+given_branch_file_locations.get(pair.getKey().toString()));
                 if(!current_file_content.equals(file_content)){
                     // Current branch and split point has changed
                    if(!given_file_content.equals(file_content)) {
-                       // File conflict
+                       //Conflicted
+                       File current_file = new File(System.getProperty("user.dir")+"/"+pair.getKey());
+                       File current_file_conflicted = new File(System.getProperty("user.dir")+"/"+pair.getKey()+".conflicted");
+                       if(current_file_conflicted.exists())
+                           throw new java.io.IOException("File exists with name "+current_file_conflicted.getName());
+                       current_file.renameTo(current_file_conflicted);
                    } else if(given_file_content.equals(file_content)) {
-                         //Nothing changes
+                         //Nothing changed in given branch, so Nothing changes.
                      }
                 } else if(current_file_content.equals(file_content)) {
                      //Current branch and split point has NOT changed
                      if(!given_file_content.equals(file_content)) {
-                         //The branch has changed so copy over
+                         File current_file = new File(System.getProperty("user.dir")+"/"+pair.getKey());
+                         FileOutputStream fooStream = new FileOutputStream(current_file, false);
+                         byte[] myBytes = given_file_content.getBytes();
+                         fooStream.write(myBytes);
+                         fooStream.close();
                      }
 
-                  }
+                 }
             }
             catch(IOException i)
             {
@@ -130,13 +144,13 @@ public class Gitlet {
         }
     }
 
-    private static Commit splitPoint(String branch1, String branch2) {
+    private static Commit splitPoint(String current_branch, String given_branch) {
         Commit commit_branch1 = null, commit_branch2 = null;
         try {
-            String branch1_commit = readFile(System.getProperty("user.dir")+"/.gitlet/refs/remotes/origin/"+branch1);
+            String branch1_commit = readFile(System.getProperty("user.dir")+"/.gitlet/refs/remotes/origin/"+current_branch);
             commit_branch1 = Commit.getCommit(branch1_commit);
 
-            String branch2_commit = readFile(System.getProperty("user.dir")+"/.gitlet/refs/remotes/origin/"+branch2);
+            String branch2_commit = readFile(System.getProperty("user.dir")+"/.gitlet/refs/remotes/origin/"+given_branch);
             commit_branch2 = Commit.getCommit(branch2_commit);
         } catch(IOException i) {
               i.printStackTrace();
@@ -153,6 +167,7 @@ public class Gitlet {
             temp1 = temp1.getPrevious();
             temp2 = temp2.getPrevious();
         }
+
         return null;
     }
 
@@ -235,7 +250,7 @@ public class Gitlet {
 
     }
 
-    private static String[] getBranches() {
+    public static String[] getBranches() {
       File folder = new File(System.getProperty("user.dir")+"/"+".gitlet"+"/refs/remotes/origin/");
       File[] listOfFiles = folder.listFiles();
       String[] branch_names = new String[listOfFiles.length];
@@ -245,7 +260,7 @@ public class Gitlet {
       return branch_names;
     }
 
-    private static String currentBranch() {
+    public static String currentBranch() {
         try {
             File file = new File(System.getProperty("user.dir")+"/.gitlet/HEAD");
             if(file.exists()) {

@@ -1,7 +1,9 @@
+
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import java.util.Arrays;
+import java.util.ArrayList;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -15,7 +17,7 @@ import java.nio.file.Paths;
 
 import org.junit.Before;
 import org.junit.Test;
-
+import java.util.Arrays;
 /**
  * Class that provides JUnit tests for Gitlet, as well as a couple of utility
  * methods.
@@ -111,13 +113,49 @@ public class GitletPublicTest {
         gitlet("merge", "test");
         assertEquals("This is not a wug.", getText(wugFileName));
 
-        /*gitlet("commit", "Test commit to wug");
+    }
 
-        assertEquals("This is a wug.", getText(wugFileName));
+    @Test
+    public void testBasicRebase() {
+        String wugFileName =  "wug.txt";
+        String wugText = "This is a wug.";
+        createFile(wugFileName, wugText);
+        gitlet("init");
+        gitlet("add", wugFileName);
+        String commitMessage0 = "initial commit";
+        String commitMessage1 = "added wug";
+        String commitMessage2 = "added text wug";
+        String commitMessage3 = "Test to wug";
+        String commitMessage4 = "Actual content to wug";
+        gitlet("commit", commitMessage1);
+        writeFile(wugFileName, "This is a wug.");
+        gitlet("add", wugFileName);
+        gitlet("commit", commitMessage2);
+
+        // Test Branch
+        gitlet("branch", "test");
+        writeFile(wugFileName, "This is not a wug.");
+        gitlet("add", wugFileName);
+        gitlet("commit", commitMessage3);
+        // Test Branch
+
+        gitlet("checkout", "master");
+        writeFile(wugFileName, "This is actually a wug.");
+        gitlet("commit", commitMessage4);
+        String logContent1 = gitlet("log");
+
+        assertArrayEquals(new String[] { commitMessage4, commitMessage2, commitMessage1, commitMessage0 },
+                extractCommitMessages(logContent1));
         gitlet("checkout", "test");
-        assertEquals("This is not a wug.", getText(wugFileName));
-        gitlet("merge", "test");
-        assertEquals("This is not a wug.", getText(wugFileName));*/
+        String logContent2 = gitlet("log");
+        assertArrayEquals(new String[] { commitMessage3, commitMessage2, commitMessage1, commitMessage0 },
+                extractCommitMessages(logContent2));
+
+        gitlet("rebase", "master");
+        String logContent = gitlet("log");
+
+        assertArrayEquals(new String[] { commitMessage3, commitMessage4, commitMessage2, commitMessage1, commitMessage0 },
+                extractCommitMessages(logContent));
     }
 
     /**

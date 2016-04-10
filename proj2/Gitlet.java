@@ -65,6 +65,9 @@ public class Gitlet {
                 createBranch(args[1]);
                 break;
             case "rm-branch":
+                if(checkIfBranch(args[1])) {
+                    removeBranch(args[1]);
+                }
                 break;
             case "reset":
                 if(checkIfCommit(args[1])) {
@@ -77,13 +80,90 @@ public class Gitlet {
                 }
                 break;
             case "rebase":
+                if(checkIfBranch(args[1])) {
+                    rebaseBranch(args[1]);
+                }
                 break;
             case "i-rebase":
                 break;
         }
     }
 
-    public static void mergeBranch(String given_branch) {
+    private static void removeBranch(String branch_name) {
+        File file = new File(System.getProperty("user.dir")+"/.gitlet/refs/remotes/origin/"+branch_name);
+        if(file.exists())
+            file.delete();
+    }
+
+    private static void rebaseBranch(String given_branch) {
+        String current_branch = currentBranch();
+        String branch = "", current = "";
+        Commit given_commit = null, current_commit = null;
+        try {
+            branch = readFile(System.getProperty("user.dir")+"/.gitlet/refs/remotes/origin/"+given_branch);
+            given_commit = Commit.getCommit(branch);
+            current = readFile(System.getProperty("user.dir")+"/.gitlet/refs/remotes/origin/"+current_branch);
+            current_commit = Commit.getCommit(current);
+        } catch(IOException i) {
+              i.printStackTrace();
+        }
+        Commit parent = null;
+
+        parent = findParent(current_commit, given_commit, current_branch, given_branch);
+        ArrayList<Commit> commits = getAllCommits(current_commit, parent);
+        Commit commit = null;
+        Commit previous_temp = given_commit;
+        Commit temp = null;
+        for(int i = commits.size()-1; i >= 0 ; i--) {
+            temp = commits.get(i);
+            HashMap<String, String> temp_files = new HashMap<String, String>();
+            temp_files = temp.getTree().getFiles();
+            HashMap<String, String> files = new HashMap<String, String>();
+            files = deserializeFiles(temp_files);
+            commit = new Commit(temp.getMessage(), previous_temp, given_branch ,files);
+            commit.serializeCommit(System.getProperty("user.dir")+"/"+".gitlet"+"/objects/"+commit.getCommitId());
+            previous_temp = temp;
+        }
+        writeHead(commit);
+    }
+
+    private static HashMap<String, String> deserializeFiles(HashMap<String, String> file_locations) {
+        HashMap<String, String> files = new HashMap<String, String>();
+        String file_content = "";
+        Iterator it = file_locations.entrySet().iterator();
+        while (it.hasNext()) {
+            Map.Entry pair = (Map.Entry)it.next();
+            file_content = Tree.deserializeFile(System.getProperty("user.dir")+"/"+".gitlet/objects/"+pair.getValue());
+            files.put(pair.getKey().toString(), file_content);
+
+        }
+        return files;
+    }
+
+    private static ArrayList<Commit> getAllCommits(Commit given_commit, Commit parent) {
+        ArrayList<Commit> commits = new ArrayList<Commit>();
+        Commit temp = given_commit;
+        while(!temp.getCommitId().equals(parent.getCommitId())) {
+            commits.add(temp);
+            temp = temp.getPrevious();
+        }
+
+        return commits;
+    }
+    private static Commit findFirstCommitAfterSplit(Commit given_commit, Commit parent) {
+        Commit temp = given_commit;
+        System.out.println("PARENT --- "+parent);
+        while(temp != null && temp.getPrevious() != null && parent != null) {
+            if(temp.getPrevious().getCommitId().equals(parent.getCommitId())){
+                System.out.println("TEMP --- "+temp);
+                return temp;
+            }
+            temp = temp.getPrevious();
+        }
+        return null;
+    }
+
+    private static void mergeBranch(String given_branch) {
         Commit given_commit = null, current_commit = null;
         String branch1_commit = "", branch2_commit = "";
 
@@ -98,9 +178,7 @@ public class Gitlet {
         }
         String current_branch = currentBranch();
         Commit split_point = splitPoint(current_branch, given_branch);
-        if(split_point == null) {
-            split_point = current_commit;
-        }
+
         HashMap<String, String> split_point_file_locations = split_point.getTree().getFiles();
         HashMap<String, String> given_branch_file_locations = given_commit.getTree().getFiles();
         HashMap<String, String> current_branch_file_locations = current_commit.getTree().getFiles();
@@ -155,20 +233,27 @@ public class Gitlet {
         } catch(IOException i) {
               i.printStackTrace();
         }
-        Commit temp1 = commit_branch1;
-        Commit temp2 = commit_branch2;
+        Commit current_commit = commit_branch1;
+        Commit given_commit = commit_branch2;
+        return findParent(current_commit, given_commit, current_branch ,given_branch);
+    }
 
-        while (temp1 != null && temp2 != null) {
-            String commit1 = temp1.getCommitId();
-            String commit2 = temp2.getCommitId();
-            if(commit1.equals(commit2)) {
-                  return Commit.getCommit(commit1);
-            }
+    private static Commit findParent(Commit current_commit, Commit given_commit, String current_branch, String given_branch) {
+        Commit temp1 = current_commit;
+        ArrayList<String> current_previous = new ArrayList<String>();
+        ArrayList<String> given_previous = new ArrayList<String>();
+        while(temp1 != null) {
+            current_previous.add(temp1.getCommitId());
             temp1 = temp1.getPrevious();
-            temp2 = temp2.getPrevious();
         }
 
-        return null;
+        Commit temp2 = given_commit;
+        while(temp2 != null) {
+            given_previous.add(temp2.getCommitId());
+            temp2 = temp2.getPrevious();
+        }
+        current_previous.retainAll(given_previous);
+        return Commit.getCommit(current_previous.get(0));
     }
 
     private static void checkOutFile(HashMap<String, String> file_locations, String file_name) {
@@ -186,7 +271,6 @@ public class Gitlet {
                     byte[] myBytes = file_content.getBytes();
                     fooStream.write(myBytes);
                     fooStream.close();
-
                 }
                 catch(IOException i)
                 {
@@ -250,7 +334,7 @@ public class Gitlet {
 
     }
 
-    public static String[] getBranches() {
+    private static String[] getBranches() {
       File folder = new File(System.getProperty("user.dir")+"/"+".gitlet"+"/refs/remotes/origin/");
       File[] listOfFiles = folder.listFiles();
       String[] branch_names = new String[listOfFiles.length];
@@ -260,7 +344,7 @@ public class Gitlet {
       return branch_names;
     }
 
-    public static String currentBranch() {
+    private static String currentBranch() {
         try {
             File file = new File(System.getProperty("user.dir")+"/.gitlet/HEAD");
             if(file.exists()) {
@@ -290,9 +374,22 @@ public class Gitlet {
             File file = new File(System.getProperty("user.dir")+"/"+".gitlet"+"/refs/remotes/origin/"+branch_name);
             FileOutputStream fooStream = new FileOutputStream(file, false);
             byte[] myBytes = head.getCommitId().getBytes();
+            storeBranch(branch_name);
+
+
             fooStream.write(myBytes);
             fooStream.close();
             flipBranch(branch_name);
+        } catch(IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private static void storeBranch(String branch_name) {
+        try {
+            String str_commit = readFile(System.getProperty("user.dir")+"/.gitlet/refs/remotes/origin/"+currentBranch());
+            Commit commit = Commit.getCommit(str_commit);
+            commit.setBranch(branch_name);
         } catch(IOException e) {
             e.printStackTrace();
         }
@@ -548,7 +645,7 @@ public class Gitlet {
         return unstaged_files;
     }
 
-    public static String readFile(String filePath) throws IOException  {
+    private static String readFile(String filePath) throws IOException  {
         byte[] encoded = Files.readAllBytes(Paths.get(filePath));
         return new String(encoded, StandardCharsets.UTF_8);
     }

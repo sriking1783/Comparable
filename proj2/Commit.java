@@ -17,11 +17,15 @@ public class Commit implements java.io.Serializable {
     private String branch_name;
     private Tree tree;
     private Timestamp commit_time;
+    private ArrayList<String> branches;
     private int commit_count;
     public Commit() {
         this("initial commit", null, "master", null);
     }
 
+    public String getMessage() {
+        return this.message;
+    }
     public Commit(String message, Commit previous, String branchName, HashMap<String, String> file_contents) {
         this.message = message;
         this.previous = previous;
@@ -29,7 +33,6 @@ public class Commit implements java.io.Serializable {
             this.commit_count = 0;
         else
             this.commit_count = previous.getCommitCount() + 1;
-
 
         this.branch_name = branchName;
         if(file_contents != null) {
@@ -41,9 +44,27 @@ public class Commit implements java.io.Serializable {
         this.tree.serializeTree(System.getProperty("user.dir")+"/"+".gitlet"+"/objects/"+this.tree.getTreeId());
         Date date = new Date();
         commit_time = new Timestamp(date.getTime());
+        this.branches = new ArrayList<String>();
         this.commit_id = new ShaHash().cryptMessage(commit_time.toString() + this.toString());
     }
 
+    public ArrayList<String> getBranches() {
+        return this.branches;
+    }
+
+    public void setBranch(String branch_name) {
+        branches.add(branch_name);
+    }
+
+    /*private void serializeBranch() {
+        ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream("test.ser"));
+        out.writeObject(new int[] {0, 1, 2, 3, 4, 5, 6, 7, 8, 9});
+        out.flush();
+        out.close();
+    }*/
+    public void setPrevious(Commit previous) {
+        this.previous = previous;
+    }
     public int getCommitCount() {
         return this.commit_count;
     }

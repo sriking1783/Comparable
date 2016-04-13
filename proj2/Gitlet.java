@@ -1,4 +1,5 @@
 import java.io.File;
+import java.util.Scanner;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
@@ -85,6 +86,9 @@ public class Gitlet {
                 }
                 break;
             case "i-rebase":
+                if(checkIfBranch(args[1])) {
+                    rebaseBranchInteractively(args[1]);
+                }
                 break;
         }
     }
@@ -95,7 +99,7 @@ public class Gitlet {
             file.delete();
     }
 
-    private static void rebaseBranch(String given_branch) {
+    private static void rebaseBranchInteractively(String given_branch) {
         String current_branch = currentBranch();
         String branch = "", current = "";
         Commit given_commit = null, current_commit = null;
@@ -114,7 +118,75 @@ public class Gitlet {
         Commit commit = null;
         Commit previous_temp = given_commit;
         Commit temp = null;
+
+        Scanner scanner = new Scanner(System.in);
+        String cmd ;
         for(int i = commits.size()-1; i >= 0 ; i--) {
+            temp = commits.get(i);
+            HashMap<String, String> temp_files = new HashMap<String, String>();
+            HashMap<String, String> skipped_temp_files = new HashMap<String, String>();
+            System.out.println("Currently replaying: ");
+            System.out.println("Would you like to (c)ontinue, (s)kip this commit, or change this commit's (m)essage?");
+            cmd = scanner.next();
+            String message = null;
+            switch(cmd){
+                case "c":
+                    break;
+                case "s":
+                    if(i == 0 || i == commits.size()-1) {
+                        System.out.println("Cannot do this for initial or final commit");
+                        i += 1;
+                    }
+                    skipped_temp_files = temp.getTree().getFiles();
+                    continue;
+                case "m":
+                    System.out.println("Please enter a new message for this commit.");
+                    message = scanner.next();
+                    break;
+                default :
+                    i += 1;
+                    System.out.println("Please enter one of 'c', 's', 'm' as the command");
+
+            }
+
+            temp_files = temp.getTree().getFiles();
+            HashMap<String, String> files = new HashMap<String, String>();
+            files = deserializeFiles(temp_files);
+            if(message == null )
+                commit = new Commit(temp.getMessage(), previous_temp, given_branch ,files);
+            else
+                commit = new Commit(message, previous_temp, given_branch ,files);
+            commit.serializeCommit(System.getProperty("user.dir")+"/"+".gitlet"+"/objects/"+commit.getCommitId());
+            previous_temp = temp;
+
+        }
+        //writeHead(commit);
+    }
+
+    private static void rebaseBranch(String given_branch) {
+        String current_branch = currentBranch();
+        String branch = "", current = "";
+        Commit given_commit = null, current_commit = null;
+        Commit previous_temp = null;
+        try {
+            branch = readFile(System.getProperty("user.dir")+"/.gitlet/refs/remotes/origin/"+given_branch);
+            given_commit = Commit.getCommit(branch);
+
+            current = readFile(System.getProperty("user.dir")+"/.gitlet/refs/remotes/origin/"+current_branch);
+            current_commit = Commit.getCommit(current);
+            previous_temp = given_commit;
+        } catch(IOException i) {
+              i.printStackTrace();
+        }
+        Commit parent = null;
+
+        parent = findParent(current_commit, given_commit, current_branch, given_branch);
+        ArrayList<Commit> commits = getAllCommits(current_commit, parent);
+        flipBranch(given_branch);
+        Commit commit = null;
+
+        Commit temp = null;
+        for(int i = commits.size() - 1; i >= 0 ; i--) {
             temp = commits.get(i);
             HashMap<String, String> temp_files = new HashMap<String, String>();
             temp_files = temp.getTree().getFiles();
@@ -122,9 +194,10 @@ public class Gitlet {
             files = deserializeFiles(temp_files);
             commit = new Commit(temp.getMessage(), previous_temp, given_branch ,files);
             commit.serializeCommit(System.getProperty("user.dir")+"/"+".gitlet"+"/objects/"+commit.getCommitId());
-            previous_temp = temp;
+            writeHead(given_branch, commit);
+            previous_temp = commit;
         }
-        writeHead(commit);
+
     }
 
     private static HashMap<String, String> deserializeFiles(HashMap<String, String> file_locations) {
@@ -140,10 +213,10 @@ public class Gitlet {
         return files;
     }
 
-    private static ArrayList<Commit> getAllCommits(Commit given_commit, Commit parent) {
+    public static ArrayList<Commit> getAllCommits(Commit given_commit, Commit parent) {
         ArrayList<Commit> commits = new ArrayList<Commit>();
         Commit temp = given_commit;
-        while(!temp.getCommitId().equals(parent.getCommitId())) {
+        while(temp.getCommitId().compareTo(parent.getCommitId())!=0) {
             commits.add(temp);
             temp = temp.getPrevious();
         }
@@ -177,7 +250,7 @@ public class Gitlet {
               i.printStackTrace();
         }
         String current_branch = currentBranch();
-        Commit split_point = splitPoint(current_branch, given_branch);
+        Commit split_point = findParent(current_commit, given_commit, current_branch ,given_branch);
 
         HashMap<String, String> split_point_file_locations = split_point.getTree().getFiles();
         HashMap<String, String> given_branch_file_locations = given_commit.getTree().getFiles();
@@ -205,7 +278,7 @@ public class Gitlet {
                      }
                 } else if(current_file_content.equals(file_content)) {
                      //Current branch and split point has NOT changed
-                     if(!given_file_content.equals(file_content)) {
+                     if(!given_file_content.equals(current_file_content)) {
                          File current_file = new File(System.getProperty("user.dir")+"/"+pair.getKey());
                          FileOutputStream fooStream = new FileOutputStream(current_file, false);
                          byte[] myBytes = given_file_content.getBytes();
@@ -222,23 +295,7 @@ public class Gitlet {
         }
     }
 
-    private static Commit splitPoint(String current_branch, String given_branch) {
-        Commit commit_branch1 = null, commit_branch2 = null;
-        try {
-            String branch1_commit = readFile(System.getProperty("user.dir")+"/.gitlet/refs/remotes/origin/"+current_branch);
-            commit_branch1 = Commit.getCommit(branch1_commit);
-
-            String branch2_commit = readFile(System.getProperty("user.dir")+"/.gitlet/refs/remotes/origin/"+given_branch);
-            commit_branch2 = Commit.getCommit(branch2_commit);
-        } catch(IOException i) {
-              i.printStackTrace();
-        }
-        Commit current_commit = commit_branch1;
-        Commit given_commit = commit_branch2;
-        return findParent(current_commit, given_commit, current_branch ,given_branch);
-    }
-
-    private static Commit findParent(Commit current_commit, Commit given_commit, String current_branch, String given_branch) {
+    public static Commit findParent(Commit current_commit, Commit given_commit, String current_branch, String given_branch) {
         Commit temp1 = current_commit;
         ArrayList<String> current_previous = new ArrayList<String>();
         ArrayList<String> given_previous = new ArrayList<String>();
@@ -344,7 +401,7 @@ public class Gitlet {
       return branch_names;
     }
 
-    private static String currentBranch() {
+    public static String currentBranch() {
         try {
             File file = new File(System.getProperty("user.dir")+"/.gitlet/HEAD");
             if(file.exists()) {
@@ -491,7 +548,7 @@ public class Gitlet {
         commit = new Commit(message, head, currentBranch() ,files);
         System.out.println("New Commit : "+commit.getCommitId());
         commit.serializeCommit(System.getProperty("user.dir")+"/"+".gitlet"+"/objects/"+commit.getCommitId());
-        writeHead(commit);
+        writeHead(currentBranch(), commit);
     }
     private static Commit getCurrentCommit() {
         return Commit.getHead(currentBranch());
@@ -645,7 +702,7 @@ public class Gitlet {
         return unstaged_files;
     }
 
-    private static String readFile(String filePath) throws IOException  {
+    public static String readFile(String filePath) throws IOException  {
         byte[] encoded = Files.readAllBytes(Paths.get(filePath));
         return new String(encoded, StandardCharsets.UTF_8);
     }
@@ -674,9 +731,9 @@ public class Gitlet {
 
     }
 
-    private static void writeHead(Commit commit) {
+    private static void writeHead(String branch, Commit commit) {
         try {
-            File file = new File(System.getProperty("user.dir")+"/"+".gitlet"+"/refs/remotes/origin/"+currentBranch());
+            File file = new File(System.getProperty("user.dir")+"/"+".gitlet"+"/refs/remotes/origin/"+branch);
             System.out.println("Writing to file "+file.getName());
             FileOutputStream fooStream = new FileOutputStream(file, false);
             byte[] myBytes = commit.getCommitId().getBytes();

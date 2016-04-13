@@ -39,6 +39,8 @@ import java.util.Arrays;
 public class GitletPublicTest {
     private static final String GITLET_DIR = ".gitlet/";
     private static final String TESTING_DIR = "test_files/";
+    private final ByteArrayOutputStream outContent = new ByteArrayOutputStream();
+
 
     /* matches either unix/mac or windows line separators */
     private static final String LINE_SEPARATOR = "\r\n|[\r\n]";
@@ -62,6 +64,7 @@ public class GitletPublicTest {
         }
         f.mkdirs();
     }
+
 
     /**
      * Tests that init creates a .gitlet directory. Does NOT test that init
@@ -94,22 +97,28 @@ public class GitletPublicTest {
     @Test
     public void testBasicMerge() {
         String wugFileName =  "wug.txt";
-        String wugText = "This is a wug.";
+        String wugText = "This is a www wug.";
         createFile(wugFileName, wugText);
         gitlet("init");
         gitlet("add", wugFileName);
-
         gitlet("commit", "added wug");
+
         writeFile(wugFileName, "This is a wug.");
         gitlet("add", wugFileName);
         gitlet("commit", "added text wug");
+
         assertEquals("This is a wug.", getText(wugFileName));
+
         gitlet("branch", "test");
         writeFile(wugFileName, "This is not a wug.");
         gitlet("add", wugFileName);
         gitlet("commit", "Test to wug");
+
+
         assertEquals("This is not a wug.", getText(wugFileName));
         gitlet("checkout", "master");
+        assertEquals("This is a wug.", getText(wugFileName));
+
         gitlet("merge", "test");
         assertEquals("This is not a wug.", getText(wugFileName));
 
@@ -119,42 +128,83 @@ public class GitletPublicTest {
     public void testBasicRebase() {
         String wugFileName =  "wug.txt";
         String wugText = "This is a wug.";
-        createFile(wugFileName, wugText);
-        gitlet("init");
-        gitlet("add", wugFileName);
         String commitMessage0 = "initial commit";
         String commitMessage1 = "added wug";
         String commitMessage2 = "added text wug";
         String commitMessage3 = "Test to wug";
         String commitMessage4 = "Actual content to wug";
+        String commitMessage5 = "Master content to wug";
+        String commitMessage6 = "Test content to wug";
+        createFile(wugFileName, wugText);
+        gitlet("init");
+        gitlet("add", wugFileName);
         gitlet("commit", commitMessage1);
+
         writeFile(wugFileName, "This is a wug.");
         gitlet("add", wugFileName);
         gitlet("commit", commitMessage2);
 
         // Test Branch
         gitlet("branch", "test");
+
+
         writeFile(wugFileName, "This is not a wug.");
         gitlet("add", wugFileName);
         gitlet("commit", commitMessage3);
-        // Test Branch
+        // End Test Branch
 
+        //Master
         gitlet("checkout", "master");
+
+
         writeFile(wugFileName, "This is actually a wug.");
+        gitlet("add", wugFileName);
         gitlet("commit", commitMessage4);
+
+        writeFile(wugFileName, "This is actually a wug on master branch.");
+        gitlet("add", wugFileName);
+        gitlet("commit", commitMessage5);
+
         String logContent1 = gitlet("log");
 
-        assertArrayEquals(new String[] { commitMessage4, commitMessage2, commitMessage1, commitMessage0 },
+        assertArrayEquals(new String[] { commitMessage5, commitMessage4, commitMessage2, commitMessage1, commitMessage0 },
                 extractCommitMessages(logContent1));
+        //End Master
         gitlet("checkout", "test");
+
         String logContent2 = gitlet("log");
+
         assertArrayEquals(new String[] { commitMessage3, commitMessage2, commitMessage1, commitMessage0 },
                 extractCommitMessages(logContent2));
 
-        gitlet("rebase", "master");
-        String logContent = gitlet("log");
+        writeFile(wugFileName, "This is actually a wug on test branch.");
+        gitlet("add", wugFileName);
+        gitlet("commit", commitMessage6);
 
-        assertArrayEquals(new String[] { commitMessage3, commitMessage4, commitMessage2, commitMessage1, commitMessage0 },
+        String logContent3 = gitlet("log");
+
+        assertArrayEquals(new String[] { commitMessage6, commitMessage3, commitMessage2, commitMessage1, commitMessage0 },
+                extractCommitMessages(logContent3));
+
+        gitlet("checkout", "master");
+
+        assertArrayEquals(new String[] { commitMessage5, commitMessage4, commitMessage2, commitMessage1, commitMessage0 },
+                extractCommitMessages(logContent1));
+
+
+        gitlet("checkout", "test");
+
+        assertArrayEquals(new String[] { commitMessage6, commitMessage3, commitMessage2, commitMessage1, commitMessage0 },
+                extractCommitMessages(logContent3));
+
+        gitlet("rebase", "master");
+
+
+
+        gitlet("checkout", "master");
+        String logContent = gitlet("log");
+        
+        assertArrayEquals(new String[] { commitMessage6, commitMessage3, commitMessage5, commitMessage4, commitMessage2, commitMessage1, commitMessage0 },
                 extractCommitMessages(logContent));
     }
 

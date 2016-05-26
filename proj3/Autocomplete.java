@@ -45,26 +45,15 @@ public class Autocomplete {
         HashMap<String, Double> matches =  t.findMatches(prefix, k);
         LinkedHashSet<String> matched_words = new LinkedHashSet<String>();
         if(matches == null) {
-            Iterator<String> it =  spellCheck(prefix, 1, k).iterator();
-            int i = 0;
-            System.out.println("00000000000");
-            while (it.hasNext()) {
-                String word = it.next();
-                System.out.println(word);
-                matched_words.add(word);
-                i++;
-                it.remove(); // avoids a ConcurrentModificationException
-            }
+            matches = spellCheck(prefix, 1, k);
         }
-        else{
-            Iterator it =  sortByValue(matches).entrySet().iterator();
-            int i = 0;
-            while (it.hasNext() && i < k) {
-                Map.Entry pair = (Map.Entry)it.next();
-                matched_words.add(pair.getKey().toString());
-                i++;
-                it.remove(); // avoids a ConcurrentModificationException
-            }
+        Iterator it =  sortByValue(matches).entrySet().iterator();
+        int i = 0;
+        while (it.hasNext() && i < k) {
+            Map.Entry pair = (Map.Entry)it.next();
+            matched_words.add(pair.getKey().toString());
+            i++;
+            it.remove(); // avoids a ConcurrentModificationException
         }
 
         return matched_words;
@@ -96,7 +85,7 @@ public class Autocomplete {
      * @param k    Number of results to return
      * @return Iterable in descending weight order of the matches
      */
-    public Iterable<String> spellCheck(String word, int dist, int k) {
+    public HashMap<String, Double> spellCheck(String word, int dist, int k) {
         LinkedList<String> results = new LinkedList<String>();
         /* YOUR CODE HERE; LEAVE BLANK IF NOT PURSUING BONUS */
         //search(word, dist, k);

@@ -15,8 +15,8 @@ public class WeightedTrie {
         }
     }
 
-    public Iterable<String> search(String word, int dist, int k) {
-        LinkedHashSet<String> matched_words = new LinkedHashSet<String>();
+    public HashMap<String, Double> search(String word, int dist, int k) {
+        HashMap<String, Double> matched_words = new HashMap<String, Double>();
         int size = word.length();
         int[] currentRow = new int[size + 1];
 
@@ -30,7 +30,7 @@ public class WeightedTrie {
         return matched_words;
     }
 
-    public void searchRec(TrieNode node, char letter, String word, String substr, LinkedHashSet<String> matched_words, int[] previousRow, int dist) {
+    public void searchRec(TrieNode node, char letter, String word, String substr, HashMap<String, Double> matched_words, int[] previousRow, int dist) {
         int size = previousRow.length;
         int[] currentRow = new int[size];
         currentRow[0] = previousRow[0] + 1;
@@ -47,7 +47,7 @@ public class WeightedTrie {
 
         if(currentRow[size - 1] <= dist && node.is_word && substr.length() > 0) {
             System.out.println(node.word+", "+currentRow[size - 1]+", "+i+", "+size+", "+substr);
-            matched_words.add(node.word);
+            matched_words.put(node.word, node.weight);
         }
 
         minimumElement = Arrays.stream(currentRow).min().getAsInt();
@@ -137,21 +137,6 @@ public class WeightedTrie {
 
     public void insert(String word, double weight) {
         insert(root, word, 0, weight);
-        // TrieNode p = root;
-        // for(int i = 0; i < word.length(); i++){
-        //     char ch = word.charAt(i);
-        //     //System.out.println(ch);
-        //     int index = ch - 'a';
-        //     if(p.links[index] == null) {
-        //         TrieNode temp = new TrieNode();
-        //         p.links[index] = temp;
-        //         p = temp;
-        //     }else {
-        //         p = p.links[index];
-        //     }
-        // }
-        // p.is_word = true;
-        // p.weight = weight;
     }
 
     public TrieNode insert(TrieNode node, String s, int d, double weight) {
@@ -174,17 +159,4 @@ public class WeightedTrie {
     public WeightedTrie() {
         this.root = new TrieNode();
     }
-
-        /*public static void main(String[] args) {
-            WeightedTrie t = new WeightedTrie();
-            t.insert("hello", 100);
-            t.insert("hey", 90);
-            t.insert("goodbye", 85);
-            System.out.println(t.find("hell", false));
-            System.out.println(t.find("hello", true));
-            System.out.println(t.find("good", false));
-            System.out.println(t.find("bye", false));
-            System.out.println(t.find("heyy", false));
-            System.out.println(t.find("hell", true));
-        }*/
 }

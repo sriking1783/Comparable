@@ -8,7 +8,6 @@ import java.util.*;
 
 public class Trie {
     private TrieNode root;
-    private static final int R = 128;
     private static String sortOrder;
     private class TrieNode {
         char c;

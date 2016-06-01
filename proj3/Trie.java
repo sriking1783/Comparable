@@ -38,7 +38,7 @@ public class Trie {
     }
     public boolean find(String s, boolean isFullWord) {
         TrieNode temp = root;
-
+        if(s.length() <= 3) return false;
         for(int i = 0; i < s.length(); i++) {
             char c = s.charAt(i);
             if(temp.links.containsKey(c)) {
@@ -93,6 +93,56 @@ public class Trie {
         char c = s.charAt(d);
         node.links.put(c, insert(node.links.get(c), s, d+1));
         return node;
+    }
+
+    public boolean hasAtLeastOneWord(String prefix) {
+        TrieNode temp = root;
+        String str = "";
+        for(int i = 0; i < prefix.length(); i++){
+            char c = prefix.charAt(i);
+            if(temp.links.containsKey(c)) {
+                str = str + c;
+                temp = temp.links.get(c);
+            }
+            else {
+                return false;
+            }
+        }
+        return (prefix.equals(str));
+    }
+
+    public Set<String> findMatches(String prefix) {
+        TrieNode temp = root;
+        String str = "";
+        for(int i = 0; i < prefix.length(); i++){
+            char c = prefix.charAt(i);
+            if(temp.links.containsKey(c)) {
+                str = str + c;
+                temp = temp.links.get(c);
+            }
+            else {
+                return null;
+            }
+        }
+        Set<String> string_matches = new HashSet<String>();
+        Stack<Character> nodes_to_visit = new Stack<Character>();
+        dfs(temp, nodes_to_visit, string_matches, str);
+        return string_matches;
+    }
+
+    private void dfs(TrieNode node, Stack<Character> nodes_to_visit, Set<String> string_matches, String str) {
+        node.visited = true;
+        for(Map.Entry<Character, TrieNode> val : node.links.entrySet()) {
+            TrieNode temp = val.getValue();
+                if(!temp.visited ){
+                    char ch = val.getKey();
+                    nodes_to_visit.push(ch);
+                    if(temp.is_word && (str + ch).length()>3) {
+                        string_matches.add(str + ch);
+                    }
+                    dfs(temp, nodes_to_visit, string_matches, str + ch);
+                }
+        }
     }
 
     public Trie() {

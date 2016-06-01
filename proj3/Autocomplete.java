@@ -86,9 +86,6 @@ public class Autocomplete {
      * @return Iterable in descending weight order of the matches
      */
     public HashMap<String, Double> spellCheck(String word, int dist, int k) {
-        LinkedList<String> results = new LinkedList<String>();
-        /* YOUR CODE HERE; LEAVE BLANK IF NOT PURSUING BONUS */
-        //search(word, dist, k);
         return t.search(word, dist, k);
     }
     /**

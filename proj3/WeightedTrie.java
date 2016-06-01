@@ -46,7 +46,6 @@ public class WeightedTrie {
         }
 
         if(currentRow[size - 1] <= dist && node.is_word && substr.length() > 0) {
-            System.out.println(node.word+", "+currentRow[size - 1]+", "+i+", "+size+", "+substr);
             matched_words.put(node.word, node.weight);
         }
 
